@@ -33,12 +33,12 @@ export function useSocketApi() {
 
   // ------- Blacklist -------
   const blacklist = {
-    list: async () => {
-      if (connected) {
-        try { return await call('blacklist:list'); } catch {}
-      }
-      return http('GET', '/api/blacklist');
-    },
+  list: async () => {
+    if (connected) {
+      try { return await call('blacklist:list'); } catch {}
+    }
+    return http('GET', '/api/list_blacklist'); // <-- FIXED
+  },
 
     addViaSocket: async ({ name, notes, file }) => {
       const b64 = file ? await fileToBase64(file) : null;

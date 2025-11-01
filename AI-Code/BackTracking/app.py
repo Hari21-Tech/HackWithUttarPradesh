@@ -324,4 +324,4 @@ if __name__ == "__main__":
     print("🟡 Logs will be written to data/track_log.csv for all cameras.")
 
     # Run Flask + SocketIO server (non-blocking tracking thread)
-    socketio.run(app, host="0.0.0.0", port=5000)
+    socketio.run(app, port=5000)
