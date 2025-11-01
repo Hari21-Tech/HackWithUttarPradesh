@@ -4,6 +4,7 @@ import time
 import json
 import threading
 from datetime import datetime
+from flask_cors import CORS
 
 from flask import Flask, request, jsonify, send_from_directory
 from flask_socketio import SocketIO
@@ -27,6 +28,7 @@ MAX_FIND_TIMEOUT = 20
 
 # --- Flask + SocketIO ---
 app = Flask(__name__)
+CORS(app)
 app.config["SECRET_KEY"] = "secret!"
 socketio = SocketIO(app, cors_allowed_origins="*")
 
@@ -82,29 +84,39 @@ def start_tracker_background(sources=None):
 # --- Routes ---
 @app.route("/api/blacklist", methods=["POST"])
 def add_blacklist():
-    if "image" not in request.files or "name" not in request.form:
-        return jsonify({"error": "missing 'name' or 'image'"}), 400
-
-    file = request.files["image"]
-    name = request.form["name"].strip()
-    if file.filename == "" or not allowed_file(file.filename):
-        return jsonify({"error": "invalid or missing image"}), 400
-
     try:
+        print("Received POST /api/blacklist")
+        if "image" not in request.files or "name" not in request.form:
+            print("Missing image or name")
+            return jsonify({"error": "missing 'name' or 'image'"}), 400
+
+        file = request.files["image"]
+        name = request.form["name"].strip()
+        print("File received:", file.filename)
+        if file.filename == "" or not allowed_file(file.filename):
+            print("Invalid or missing image")
+            return jsonify({"error": "invalid or missing image"}), 400
+
         img_bytes = file.read()
+        print("Image bytes length:", len(img_bytes))
         rgb = image_bytes_to_rgb_array(img_bytes)
+        print("Image converted to RGB array")
         encodings = face_recognition.face_encodings(rgb)
+        print("Face encodings:", encodings)
         if not encodings:
+            print("No face found")
             return jsonify({"error": "no face found"}), 400
         embedding = encodings[0].tolist()
 
         # Add to embeddings
         person_id = facial.add_to_blacklist(name, embedding)
+        print("Added to blacklist:", person_id)
 
         # Save image locally
         filename = f"{person_id}.jpg"
         path = os.path.join(BLACKLIST_DIR, filename)
         Image.fromarray(rgb).save(path)
+        print("Image saved:", path)
 
         return jsonify({
             "status": "ok",
@@ -112,6 +124,9 @@ def add_blacklist():
             "image_url": f"/static/blacklisted_images/{filename}"
         }), 200
     except Exception as e:
+        import traceback
+        print("Exception in /api/blacklist:", e)
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
@@ -119,13 +134,19 @@ def add_blacklist():
 def list_blacklist():
     data = facial.load_blacklist()
     records = []
-    for pid, details in data.items():
-        img_path = f"/static/blacklisted_images/{pid}.jpg"
-        records.append({
-            "id": pid,
-            "name": details.get("name", ""),
-            "image_url": img_path
-        })
+    if isinstance(data, dict):
+        for pid, details in data.items():
+            img_path = f"/static/blacklisted_images/{pid}.jpg"
+            records.append({
+                "id": pid,
+                "name": details.get("name", ""),
+                "image_url": img_path
+            })
+    elif isinstance(data, list):
+        # fallback: just return the list as-is
+        records = data
+    else:
+        return jsonify({"error": "Invalid blacklist data format"}), 500
     return jsonify(records), 200
 
 

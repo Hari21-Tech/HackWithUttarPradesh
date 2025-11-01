@@ -1,154 +1,61 @@
 timestamp,camera,event_type,details
-01-11-2025 19:21:24.427348,0,person_detected,Person_001
-01-11-2025 19:22:19.788603,0,person_detected,Person_001
-01-11-2025 19:24:46.030372,0,person_detected,Person_001
-01-11-2025 19:25:10.173216,0,person_detected,Person_001
-01-11-2025 19:25:23.538878,0,person_left,Person_001
-01-11-2025 19:25:24.361868,0,person_detected,Person_001
-01-11-2025 19:25:26.486962,0,person_left,Person_001
-01-11-2025 19:26:51.545908,0,person_detected,Person_001
-01-11-2025 19:29:17.632865,0,person_detected,Person_001
-01-11-2025 19:29:22.279856,1,person_detected,Person_001
-01-11-2025 19:29:22.809879,1,person_left,Person_001
-01-11-2025 19:29:25.759317,1,person_detected,Person_001
-01-11-2025 19:29:25.885889,0,person_left,Person_001
-01-11-2025 19:29:26.765842,0,person_detected,Person_001
-01-11-2025 19:29:31.721194,0,person_left,Person_001
-01-11-2025 19:29:31.950351,1,person_left,Person_001
-01-11-2025 19:29:32.388371,0,person_detected,Person_001
-01-11-2025 19:29:34.526912,1,objects_abandoned,laptop
-01-11-2025 19:29:35.146921,1,abandoned_objects_picked,laptop
-01-11-2025 19:29:36.766374,0,person_left,Person_001
-01-11-2025 19:29:37.375493,0,person_detected,Person_001
-01-11-2025 19:29:38.558561,1,person_detected,Person_001
-01-11-2025 19:29:39.089478,1,person_left,Person_001
-01-11-2025 19:29:43.992245,1,person_detected,Person_002
-01-11-2025 19:29:44.514089,1,person_left,Person_002
-01-11-2025 19:29:48.482549,1,objects_abandoned,laptop
-01-11-2025 19:29:49.505999,1,person_detected,Person_001
-01-11-2025 19:29:49.506315,1,objects_with_person,Person_001: cell phone
-01-11-2025 19:29:49.506659,1,abandoned_objects_picked,laptop
-01-11-2025 19:29:50.088261,1,person_left,Person_001
-01-11-2025 19:29:50.088640,1,objects_removed,None: cell phone
-01-11-2025 19:29:50.088864,1,objects_abandoned,cell phone
-01-11-2025 19:29:51.618336,0,person_left,Person_001
-01-11-2025 19:29:51.618793,0,objects_abandoned,tv
-01-11-2025 19:29:52.272261,0,person_detected,Person_001
-01-11-2025 19:29:52.272655,0,abandoned_objects_picked,tv
-01-11-2025 19:29:54.147088,0,objects_with_person,Person_001: cell phone
-01-11-2025 19:29:54.493778,1,person_detected,Person_001
-01-11-2025 19:29:55.182684,0,objects_removed,Person_001: cell phone
-01-11-2025 19:29:55.335955,1,person_left,Person_001
-01-11-2025 19:29:56.179608,1,person_detected,Person_003
-01-11-2025 19:30:00.217983,0,person_detected,Person_002
-01-11-2025 19:30:01.178474,0,person_detected,Person_001
-01-11-2025 19:30:01.255583,1,person_left,Person_003
-01-11-2025 19:30:01.255930,1,abandoned_objects_picked,cell phone
-01-11-2025 19:30:02.205801,1,person_detected,Person_001
-01-11-2025 19:30:02.811577,0,objects_with_person,Person_001: cell phone
-01-11-2025 19:30:03.640988,0,objects_removed,Person_001: cell phone
-01-11-2025 19:30:04.458548,0,objects_with_person,Person_001: cell phone
-01-11-2025 19:30:05.349567,0,objects_removed,Person_001: cell phone
-01-11-2025 19:30:05.630343,1,person_left,Person_001
-01-11-2025 19:49:22.751092,0,person_detected,Person_001
-01-11-2025 19:49:23.736684,0,person_detected,Person_003
-01-11-2025 19:49:25.191611,0,person_left,Person_003
-01-11-2025 19:49:26.210252,0,person_detected,Person_003
-01-11-2025 19:49:27.232875,0,person_detected,Person_001
-01-11-2025 19:49:39.459586,0,person_left,Person_001
-01-11-2025 19:49:41.349534,0,person_detected,Person_001
-01-11-2025 19:51:15.575153,0,person_detected,Person_004
-01-11-2025 19:51:17.536806,0,person_detected,Person_001
-01-11-2025 19:51:22.290379,0,person_detected,Person_004
-01-11-2025 19:51:24.238770,0,person_detected,Person_001
-01-11-2025 19:51:32.778146,0,person_detected,Person_004
-01-11-2025 19:51:41.414563,0,person_detected,Person_002
-01-11-2025 19:51:44.313288,0,person_detected,Person_001
-01-11-2025 19:51:59.820716,0,person_detected,Person_004
-01-11-2025 19:52:01.751308,0,person_detected,Person_001
-01-11-2025 19:53:15.619449,0,person_detected,Person_001
-01-11-2025 19:53:18.938588,1,person_detected,Person_001
-01-11-2025 19:53:19.487713,1,person_left,Person_001
-01-11-2025 19:54:01.822975,0,person_detected,Person_002
-01-11-2025 19:54:03.008489,1,person_detected,Person_001
-01-11-2025 19:54:04.168263,0,person_detected,Person_001
-01-11-2025 19:54:04.429430,1,person_left,Person_001
-01-11-2025 19:54:20.630652,0,person_left,Person_001
-01-11-2025 19:54:22.501150,0,person_detected,Person_001
-01-11-2025 19:58:13.029046,1,person_detected,Person_002
-01-11-2025 19:58:13.565602,0,person_detected,Person_001
-01-11-2025 19:58:13.711796,1,person_left,Person_002
-01-11-2025 19:58:22.656104,1,person_detected,Person_002
-01-11-2025 19:58:24.139350,1,person_left,Person_002
-01-11-2025 19:59:45.040506,0,person_detected,Person_001
-01-11-2025 19:59:47.692533,0,person_detected,Person_002
-01-11-2025 19:59:49.729953,0,person_detected,Person_001
-01-11-2025 20:00:14.873964,0,objects_with_person,Person_001: tv
-01-11-2025 20:00:16.772444,0,objects_with_person,Person_001: umbrella
-01-11-2025 20:00:16.773331,0,objects_removed,Person_001: tv
-01-11-2025 20:00:18.765500,0,objects_removed,Person_001: umbrella
-01-11-2025 20:00:20.690841,0,objects_with_person,Person_001: tv
-01-11-2025 20:00:22.545379,0,objects_removed,Person_001: tv
-01-11-2025 20:03:01.937933,0,person_detected,Person_001
-01-11-2025 20:03:53.216152,0,person_detected,Person_001
-01-11-2025 20:08:15.436620,0,person_detected,Person_001
-01-11-2025 20:08:19.596941,0,person_left,Person_001
-01-11-2025 20:08:22.809089,0,person_detected,Person_001
-01-11-2025 20:08:29.215556,0,person_left,Person_001
-01-11-2025 20:08:31.154403,0,person_detected,Person_001
-01-11-2025 20:08:59.333529,0,person_left,Person_001
-01-11-2025 20:09:01.355263,0,person_detected,Person_001
-01-11-2025 20:09:09.396552,1,objects_abandoned,umbrella
-01-11-2025 20:09:11.249464,1,abandoned_objects_picked,umbrella
-01-11-2025 20:09:13.150125,1,objects_abandoned,umbrella
-01-11-2025 20:09:15.029535,1,abandoned_objects_picked,umbrella
-01-11-2025 20:09:17.546906,0,person_left,Person_001
-01-11-2025 20:09:19.519587,0,person_detected,Person_001
-01-11-2025 20:09:21.603743,1,objects_abandoned,umbrella
-01-11-2025 20:09:23.530175,1,abandoned_objects_picked,umbrella
-01-11-2025 20:09:25.996535,0,person_left,Person_001
-01-11-2025 20:09:27.835085,0,person_detected,Person_001
-01-11-2025 20:09:29.947364,1,objects_abandoned,umbrella
-01-11-2025 20:09:31.835199,1,abandoned_objects_picked,umbrella
-01-11-2025 20:09:42.132383,0,person_left,Person_001
-01-11-2025 20:09:43.991256,0,person_detected,Person_001
-01-11-2025 20:09:44.242453,1,objects_abandoned,umbrella
-01-11-2025 20:09:49.795365,1,abandoned_objects_picked,umbrella
-01-11-2025 20:09:51.674314,1,objects_abandoned,umbrella
-01-11-2025 20:09:52.367662,0,person_left,Person_001
-01-11-2025 20:09:52.603658,1,abandoned_objects_picked,umbrella
-01-11-2025 20:10:00.619995,0,person_detected,Person_001
-01-11-2025 20:10:01.500310,0,person_left,Person_001
-01-11-2025 20:10:01.802949,1,objects_abandoned,umbrella
-01-11-2025 20:10:03.385422,0,person_detected,Person_001
-01-11-2025 20:10:03.633329,1,abandoned_objects_picked,umbrella
-01-11-2025 20:10:06.084290,0,person_left,Person_001
-01-11-2025 20:10:06.376470,1,objects_abandoned,umbrella
-01-11-2025 20:10:07.942431,0,person_detected,Person_001
-01-11-2025 20:10:08.182954,1,abandoned_objects_picked,umbrella
-01-11-2025 20:10:11.894161,1,objects_abandoned,umbrella
-01-11-2025 20:10:13.855167,1,abandoned_objects_picked,umbrella
-01-11-2025 20:10:15.811287,1,objects_abandoned,umbrella
-01-11-2025 20:10:19.590160,1,abandoned_objects_picked,umbrella
-01-11-2025 20:10:21.403386,1,objects_abandoned,umbrella
-01-11-2025 20:10:23.293517,1,abandoned_objects_picked,umbrella
-01-11-2025 20:10:40.526036,1,objects_abandoned,umbrella
-01-11-2025 20:10:42.366094,1,abandoned_objects_picked,umbrella
-01-11-2025 20:10:44.924333,0,person_left,Person_001
-01-11-2025 20:10:46.838760,0,person_detected,Person_001
-01-11-2025 20:10:48.946286,1,objects_abandoned,umbrella
-01-11-2025 20:10:50.761070,1,abandoned_objects_picked,umbrella
-01-11-2025 20:10:52.635603,1,objects_abandoned,umbrella
-01-11-2025 20:11:08.614391,1,person_detected,Person_002
-01-11-2025 20:11:09.906736,0,person_detected,Person_001
-01-11-2025 20:11:10.186915,1,person_left,Person_002
-01-11-2025 20:11:12.163566,1,objects_abandoned,umbrella
-01-11-2025 20:11:21.667440,1,abandoned_objects_picked,umbrella
-01-11-2025 20:11:23.550356,1,objects_abandoned,umbrella
-01-11-2025 20:11:27.312706,1,abandoned_objects_picked,umbrella
-01-11-2025 20:12:17.438178,0,person_detected,Person_001
-01-11-2025 20:12:32.609430,0,person_left,Person_001
-01-11-2025 20:12:33.207538,0,person_detected,Person_001
-01-11-2025 20:14:24.895599,0,person_left,Person_001
-01-11-2025 20:14:29.072848,0,person_detected,Person_002
-01-11-2025 20:14:31.002025,0,person_detected,Person_001
+01-11-2025 20:39:03.558757,0,person_detected,Person_001
+01-11-2025 20:39:43.366867,0,person_detected,Person_001
+01-11-2025 20:43:16.776297,0,person_detected,Person_001
+01-11-2025 20:43:21.164909,0,person_left,Person_001
+01-11-2025 20:43:22.088928,0,person_detected,Person_001
+01-11-2025 20:45:09.352450,0,person_detected,Person_001
+01-11-2025 20:45:13.728668,0,person_left,Person_001
+01-11-2025 20:45:30.506160,0,objects_abandoned,scissors
+01-11-2025 20:45:31.408210,0,person_detected,Person_001
+01-11-2025 20:45:31.408910,0,abandoned_objects_picked,scissors
+01-11-2025 20:45:33.846631,0,person_left,Person_001
+01-11-2025 20:45:58.430129,0,person_detected,Person_001
+01-11-2025 20:46:09.465485,0,person_left,Person_001
+01-11-2025 20:46:09.466698,0,objects_abandoned,"keyboard, laptop"
+01-11-2025 20:46:10.465650,0,abandoned_objects_picked,keyboard
+01-11-2025 20:46:12.396609,0,person_detected,Person_001
+01-11-2025 20:46:12.398138,0,abandoned_objects_picked,laptop
+01-11-2025 20:46:21.287172,0,person_left,Person_001
+01-11-2025 20:46:24.319619,0,person_detected,Person_001
+01-11-2025 20:48:46.771222,0,person_detected,Person_001
+01-11-2025 20:48:49.641519,0,objects_with_person,Person_001: scissors
+01-11-2025 20:48:50.604984,0,objects_removed,Person_001: scissors
+01-11-2025 20:48:54.971380,0,objects_with_person,Person_001: scissors
+01-11-2025 20:48:56.869753,0,objects_removed,Person_001: scissors
+01-11-2025 20:49:02.611948,0,objects_with_person,Person_001: scissors
+01-11-2025 20:49:03.519875,0,person_left,Person_001
+01-11-2025 20:49:03.521066,0,objects_removed,None: scissors
+01-11-2025 20:49:03.521968,0,objects_abandoned,scissors
+01-11-2025 20:49:05.519231,0,person_detected,Person_001
+01-11-2025 20:49:05.520164,0,objects_with_person,Person_001: scissors
+01-11-2025 20:49:05.521042,0,abandoned_objects_picked,scissors
+01-11-2025 20:49:11.276772,0,objects_removed,Person_001: scissors
+01-11-2025 20:49:13.242503,0,objects_with_person,Person_001: scissors
+01-11-2025 20:49:26.503379,0,objects_removed,Person_001: scissors
+01-11-2025 20:49:27.411533,0,person_left,Person_001
+01-11-2025 20:49:29.453520,0,person_detected,Person_001
+01-11-2025 20:49:29.454609,0,objects_abandoned,scissors
+01-11-2025 20:49:31.433378,0,objects_with_person,Person_001: scissors
+01-11-2025 20:49:31.434317,0,abandoned_objects_picked,scissors
+01-11-2025 20:49:47.687277,0,objects_removed,Person_001: scissors
+01-11-2025 20:49:49.682887,0,objects_with_person,Person_001: scissors
+01-11-2025 20:50:05.366763,0,objects_removed,Person_001: scissors
+01-11-2025 20:50:06.269756,0,person_left,Person_001
+01-11-2025 20:50:08.138419,0,person_detected,Person_001
+01-11-2025 20:50:11.139645,0,person_left,Person_001
+01-11-2025 20:50:12.983033,0,person_detected,Person_001
+01-11-2025 20:50:41.360941,0,person_left,Person_001
+01-11-2025 20:50:43.203413,0,person_detected,Person_001
+01-11-2025 20:51:31.595008,0,person_detected,Person_001
+01-11-2025 20:51:32.994239,0,person_left,Person_001
+01-11-2025 20:51:33.965476,0,person_detected,Person_001
+01-11-2025 20:51:37.290099,0,person_left,Person_001
+01-11-2025 20:51:38.718992,0,person_detected,Person_001
+01-11-2025 20:52:40.469405,0,person_detected,Person_001
+01-11-2025 20:52:59.398600,0,person_left,Person_001
+01-11-2025 20:53:24.177931,0,person_detected,Person_001
+01-11-2025 20:53:30.366263,0,person_left,Person_001
+01-11-2025 20:53:31.709969,0,person_detected,Person_001
+01-11-2025 20:55:14.462522,0,person_detected,Person_001
+01-11-2025 20:57:29.628266,0,person_detected,Person_001
