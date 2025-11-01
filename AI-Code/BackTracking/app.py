@@ -12,6 +12,7 @@ from werkzeug.utils import secure_filename
 import numpy as np
 import face_recognition
 from PIL import Image
+from core.backtrack_requests import create_request, update_status, list_requests
 
 from core.tracker import MultiCamTracker
 from core.facial import FacialRecognition
@@ -148,6 +149,84 @@ def list_blacklist():
     else:
         return jsonify({"error": "Invalid blacklist data format"}), 500
     return jsonify(records), 200
+
+@app.route("/api/backtrack_request", methods=["POST"])
+def backtrack_request():
+    """User requests backtrack (face + object)."""
+    try:
+        if "person_image" not in request.files or "object_name" not in request.form:
+            return jsonify({"error": "missing fields"}), 400
+
+        file = request.files["person_image"]
+        object_name = request.form["object_name"].strip()
+        if not allowed_file(file.filename):
+            return jsonify({"error": "invalid image"}), 400
+
+        img_bytes = file.read()
+        rgb = image_bytes_to_rgb_array(img_bytes)
+        encodings = face_recognition.face_encodings(rgb)
+        if not encodings:
+            return jsonify({"error": "no face detected"}), 400
+
+        # Match with existing embeddings
+        embedding = encodings[0]
+        entry, dist = facial.is_embedding_blacklisted(embedding)
+        if entry is None:
+            return jsonify({"error": "person not recognized"}), 404
+
+        person_id = entry.get("id") or entry.get("name")
+        image_path = os.path.join(DATA_DIR, f"{person_id}_req.jpg")
+        Image.fromarray(rgb).save(image_path)
+
+        # Store pending request
+        req = create_request(person_id, object_name, image_path)
+
+        # Notify admin frontend
+        socketio.emit("new_backtrack_request", req)
+
+        return jsonify({"message": "request_pending_admin_approval", "request": req}), 200
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/admin/requests", methods=["GET"])
+def admin_list_requests():
+    """Admin dashboard to see pending/approved requests."""
+    return jsonify(list_requests()), 200
+
+
+@app.route("/api/admin/requests/<req_id>/approve", methods=["POST"])
+def admin_approve_request(req_id):
+    """Admin approves request — triggers backtracking."""
+    try:
+        reqs = list_requests()
+        target = next((r for r in reqs if r["id"] == req_id), None)
+        if not target:
+            return jsonify({"error": "not found"}), 404
+
+        history = tracker.get_object_history(target["object_name"])
+        if not history:
+            update_status(req_id, "failed", result="No object history found")
+            return jsonify({"error": "no history"}), 404
+
+        update_status(req_id, "approved", result=history)
+        socketio.emit("backtrack_result_ready", {"req_id": req_id, "result": history})
+        return jsonify({"status": "approved", "result": history}), 200
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/admin/requests/<req_id>/reject", methods=["POST"])
+def admin_reject_request(req_id):
+    """Admin rejects user request."""
+    update_status(req_id, "rejected")
+    socketio.emit("backtrack_rejected", {"req_id": req_id})
+    return jsonify({"status": "rejected"}), 200
 
 
 @app.route("/api/health", methods=["GET"])
