@@ -18,20 +18,41 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as SecureStore from 'expo-secure-store';
+import { getSocket } from './lib/socket';
 
-// A tiny base64 placeholder (transparent PNG) – replace with real binary from backend when available:
+// --- Config (uses envs you provided and falls back to them) ---
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.4:2105';
+
+// A tiny base64 placeholder (transparent PNG)
 const BLANK_BASE64 =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4////FwAJxwP5WkzjNwAAAABJRU5ErkJggg==';
 
+type ServerResult = {
+  matchConfidence?: number;
+  previewBase64?: string;
+  notes?: string;
+  lastKnownLocation?: string;
+  [k: string]: any;
+};
+
 type RequestItem = {
-  id: string;
+  id: string; // local id
+  backendId?: string; // server request id to match socket updates
   objectName: string;
   objectColor: string;
   createdAt: string; // ISO
-  status: 'found' | 'in_progress' | 'not_matched';
+  status:
+    | 'found'
+    | 'in_progress'
+    | 'not_matched'
+    | 'pending'
+    | 'tracking'
+    | 'completed'
+    | 'rejected';
   lastKnownLocation?: string;
-  // When backend returns binary bytes, encode to base64 and send as this:
   imageBase64?: string; // base64 (no data: prefix)
+  serverResult?: ServerResult | null;
 };
 
 export default function Backtracking() {
@@ -42,43 +63,64 @@ export default function Backtracking() {
   const [submitting, setSubmitting] = useState(false);
   const pressScale = useMemo(() => new Animated.Value(1), []);
 
-  // --- History state (mocked) ---
+  // --- History state (local; server has no user-history endpoint) ---
   const [loadingHistory, setLoadingHistory] = useState(false);
-  const [requests, setRequests] = useState<RequestItem[]>([
-    {
-      id: 'req_101',
-      objectName: 'Wallet',
-      objectColor: 'Black',
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-      status: 'found',
-      lastKnownLocation: 'Library – Ground Floor',
-      imageBase64: BLANK_BASE64,
-    },
-    {
-      id: 'req_102',
-      objectName: 'Bottle',
-      objectColor: 'Blue',
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(),
-      status: 'in_progress',
-      lastKnownLocation: 'Cafeteria – Counter 2',
-      imageBase64: BLANK_BASE64,
-    },
-    {
-      id: 'req_103',
-      objectName: 'Earbuds Case',
-      objectColor: 'White',
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(),
-      status: 'not_matched',
-      lastKnownLocation: 'Gym – Locker Area',
-      imageBase64: BLANK_BASE64,
-    },
-  ]);
+  const [requests, setRequests] = useState<RequestItem[]>([]);
 
+  // stable per-device user id (handy if you later move users into rooms)
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // --- Seed + userId ---
   useEffect(() => {
-    // Simulate fetching history
+    (async () => {
+      let uid = await SecureStore.getItemAsync('userId');
+      if (!uid) {
+        uid = `u_${Math.random().toString(36).slice(2, 10)}`;
+        await SecureStore.setItemAsync('userId', uid);
+      }
+      setUserId(uid);
+    })();
+
     setLoadingHistory(true);
-    const t = setTimeout(() => setLoadingHistory(false), 600);
+    const t = setTimeout(() => setLoadingHistory(false), 300);
     return () => clearTimeout(t);
+  }, []);
+
+  // --- Socket listeners: reflect backend updates into the list ---
+  useEffect(() => {
+    const s = getSocket();
+
+    const onResult = ({ req_id, result }: { req_id: string; result: ServerResult }) => {
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.backendId === req_id
+            ? {
+                ...r,
+                status: 'completed',
+                lastKnownLocation: result?.lastKnownLocation || r.lastKnownLocation || '—',
+                serverResult: result,
+                imageBase64: result?.previewBase64 || r.imageBase64 || BLANK_BASE64,
+              }
+            : r
+        )
+      );
+      Alert.alert('Update', 'Your backtrack result is ready.');
+    };
+
+    const onRejected = ({ req_id }: { req_id: string }) => {
+      setRequests((prev) =>
+        prev.map((r) => (r.backendId === req_id ? { ...r, status: 'rejected' } : r))
+      );
+      Alert.alert('Update', 'Your request was rejected by admin.');
+    };
+
+    s.on('backtrack_result_ready', onResult);
+    s.on('backtrack_rejected', onRejected);
+
+    return () => {
+      s.off('backtrack_result_ready', onResult);
+      s.off('backtrack_rejected', onRejected);
+    };
   }, []);
 
   const pickImage = async () => {
@@ -101,33 +143,60 @@ export default function Backtracking() {
 
   const handleRemoveImage = () => setUserImage(null);
 
-  const handleSubmit = () => {
-    if (!objectName.trim() || !objectColor.trim() || !userImage) {
-      Alert.alert('Error', 'Please fill in all fields and upload an image');
+  // --- Submit to your existing /api/backtrack_request ---
+  const handleSubmit = async () => {
+    if (!objectName.trim() || !userImage) {
+      Alert.alert('Error', 'Please fill in object name and select a photo');
       return;
     }
-    setSubmitting(true);
+    try {
+      setSubmitting(true);
 
-    // Simulate backend create
-    const newItem: RequestItem = {
-      id: `req_${Math.floor(Math.random() * 100000)}`,
-      objectName,
-      objectColor,
-      createdAt: new Date().toISOString(),
-      status: 'in_progress',
-      lastKnownLocation: 'Processing...',
-      // For demo we’ll keep placeholder img; in real app you’d send your selected image to backend.
-      imageBase64: BLANK_BASE64,
-    };
+      const form = new FormData();
+      form.append('object_name', objectName.trim());
+      // backend expects person_image
+      form.append('person_image', {
+        uri: userImage,
+        name: 'face.jpg',
+        type: 'image/jpeg',
+      } as any);
+      if (objectColor.trim()) form.append('object_color', objectColor.trim());
+      if (userId) form.append('user_id', userId); // optional: if you add user rooms later
 
-    setTimeout(() => {
+      const res = await fetch(`${API_BASE}/api/backtrack_request`, {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+        body: form,
+      });
+
+      const json = await res.json().catch(() => ({} as any));
+      if (!res.ok) {
+        throw new Error(json?.error || 'Submit failed');
+      }
+
+      const backend = json?.request; // { id, person_id, object_name, image_path, status, created_at }
+      const newItem: RequestItem = {
+        id: `local_${Math.random().toString(36).slice(2, 10)}`,
+        backendId: backend?.id,
+        objectName,
+        objectColor,
+        createdAt: backend?.created_at || new Date().toISOString(),
+        status: 'pending',
+        lastKnownLocation: '—',
+        imageBase64: BLANK_BASE64,
+        serverResult: null,
+      };
+
       setRequests((prev) => [newItem, ...prev]);
-      setSubmitting(false);
-      Alert.alert('Success', 'Your lost object details have been submitted. We will help you find it!');
+      Alert.alert('Submitted', 'Request sent for admin approval. You’ll get updates here.');
       setObjectName('');
       setObjectColor('');
       setUserImage(null);
-    }, 900);
+    } catch (e: any) {
+      Alert.alert('Failed', e?.message || 'Could not submit');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const animatePressIn = () => {
@@ -151,8 +220,12 @@ export default function Backtracking() {
       found: { label: 'Found', bg: '#10b981' },
       in_progress: { label: 'In progress', bg: '#4C89FF' },
       not_matched: { label: 'Not matched', bg: '#ef4444' },
+      pending: { label: 'Pending', bg: '#f59e0b' },
+      tracking: { label: 'Tracking…', bg: '#3b82f6' },
+      completed: { label: 'Completed', bg: '#10b981' },
+      rejected: { label: 'Rejected', bg: '#ef4444' },
     } as const;
-    const s = map[status];
+    const s = map[status] || map.pending;
     return (
       <View style={[styles.pill, { backgroundColor: s.bg }]}>
         <Text style={styles.pillText}>{s.label}</Text>
@@ -161,10 +234,7 @@ export default function Backtracking() {
   };
 
   const handleNotMyObject = (id: string) => {
-    // Simulate notifying backend that suggested match is wrong
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: 'not_matched' } : r))
-    );
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'not_matched' } : r)));
     Alert.alert('Noted', 'Thanks! We’ll continue searching for your object.');
   };
 
@@ -177,9 +247,20 @@ export default function Backtracking() {
           {statusPill(item.status)}
         </View>
 
-        <Text style={styles.cardMeta}>Color: <Text style={{ fontWeight: '700', color: '#fff' }}>{item.objectColor}</Text></Text>
-        <Text style={styles.cardMeta}>Last location: <Text style={{ color: '#e8f2ff' }}>{item.lastKnownLocation || '—'}</Text></Text>
-        <Text style={styles.cardMeta}>Requested: <Text style={{ color: '#e8f2ff' }}>{formatWhen(item.createdAt)}</Text></Text>
+        <Text style={styles.cardMeta}>
+          Color:{' '}
+          <Text style={{ fontWeight: '700', color: '#fff' }}>
+            {item.objectColor || '—'}
+          </Text>
+        </Text>
+        <Text style={styles.cardMeta}>
+          Last location:{' '}
+          <Text style={{ color: '#e8f2ff' }}>{item.lastKnownLocation || '—'}</Text>
+        </Text>
+        <Text style={styles.cardMeta}>
+          Requested:{' '}
+          <Text style={{ color: '#e8f2ff' }}>{formatWhen(item.createdAt)}</Text>
+        </Text>
 
         <View style={styles.previewRow}>
           <Image source={{ uri: dataUri }} style={styles.historyImage} />
@@ -191,7 +272,13 @@ export default function Backtracking() {
               <TouchableOpacity
                 activeOpacity={0.85}
                 style={[styles.actionSlim, { backgroundColor: '#4C89FF' }]}
-                onPress={() => Alert.alert('Opening', 'Open full result / navigate to details screen')}
+                onPress={() => {
+                  if (item.serverResult?.notes) {
+                    Alert.alert('Model Notes', item.serverResult.notes);
+                  } else {
+                    Alert.alert('Opening', 'Open full result / navigate to details screen');
+                  }
+                }}
               >
                 <Ionicons name="eye-outline" size={16} color="#fff" />
                 <Text style={styles.actionSlimText}>View result</Text>
@@ -234,7 +321,7 @@ export default function Backtracking() {
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Object Color</Text>
+            <Text style={styles.label}>Object Color (optional)</Text>
             <TextInput
               placeholder="e.g., Black, Red, Blue"
               placeholderTextColor="#9fb8ff"
