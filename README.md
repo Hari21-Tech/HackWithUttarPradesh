@@ -1,2 +1,0 @@
-# HackWithUttarPradesh
-HackWithUttarPradesh-QueJI

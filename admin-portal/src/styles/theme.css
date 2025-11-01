@@ -1,0 +1,61 @@
+:root {
+background: radial-gradient(1200px 800px at 10% 10%, #0c121a 0%, var(--bg) 50%), var(--bg);
+color: var(--text);
+}
+
+
+.app-shell { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+.sidebar {
+background: linear-gradient(180deg, #0e141c 0%, #0a0f15 100%);
+border-right: 1px solid var(--border);
+padding: 16px 12px;
+}
+.sidebar .brand {
+display: flex; align-items: center; gap: 10px; padding: 8px 10px; margin-bottom: 12px;
+}
+.brand-badge { width: 10px; height: 10px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 12px var(--primary); }
+.brand-title { font-weight: 700; letter-spacing: 0.3px; }
+.brand-sub { color: var(--subtext); font-size: 12px; }
+
+
+.nav { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.nav a {
+text-decoration: none; color: var(--text);
+padding: 10px 12px; border-radius: 10px; display: flex; align-items: center; gap: 10px;
+border: 1px solid transparent;
+}
+.nav a.active, .nav a:hover { background: var(--muted); border-color: var(--border); }
+.nav .pill { font-size: 11px; color: #0a0f15; background: var(--warn); padding: 2px 6px; border-radius: 999px; margin-left: auto; }
+
+
+.content { padding: 20px 24px; }
+.header {
+display: flex; align-items: center; gap: 12px; justify-content: space-between;
+padding: 14px 18px; border: 1px solid var(--border); background: rgba(17,24,39,0.7);
+border-radius: 14px; backdrop-filter: blur(6px); margin-bottom: 16px;
+}
+.header h1 { font-size: 18px; margin: 0; }
+.header .status { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--subtext); }
+.status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--info); box-shadow: 0 0 8px var(--info); }
+
+
+.card {
+background: rgba(15, 20, 28, 0.9);
+border: 1px solid var(--border);
+border-radius: 14px; padding: 16px; margin-bottom: 16px;
+}
+.card h2 { font-size: 16px; margin: 0 0 10px; }
+.input, .button {
+padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+background: #0c121a; color: var(--text);
+}
+.button { cursor: pointer; }
+.button.primary { background: linear-gradient(180deg, #1aa34a, var(--primary)); border-color: #1aa34a; }
+.button.ghost { background: transparent; }
+
+
+.login-wrap { display: grid; place-items: center; min-height: 100vh; padding: 24px; }
+.login-box { width: 100%; max-width: 360px; }
+.login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.login-title { font-size: 22px; font-weight: 800; letter-spacing: 0.3px; }
+.help { color: var(--subtext); font-size: 12px; }
