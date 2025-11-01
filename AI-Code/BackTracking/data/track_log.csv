@@ -1,0 +1,52 @@
+timestamp,camera,event_type,details
+01-11-2025 19:21:24.427348,0,person_detected,Person_001
+01-11-2025 19:22:19.788603,0,person_detected,Person_001
+01-11-2025 19:24:46.030372,0,person_detected,Person_001
+01-11-2025 19:25:10.173216,0,person_detected,Person_001
+01-11-2025 19:25:23.538878,0,person_left,Person_001
+01-11-2025 19:25:24.361868,0,person_detected,Person_001
+01-11-2025 19:25:26.486962,0,person_left,Person_001
+01-11-2025 19:26:51.545908,0,person_detected,Person_001
+01-11-2025 19:29:17.632865,0,person_detected,Person_001
+01-11-2025 19:29:22.279856,1,person_detected,Person_001
+01-11-2025 19:29:22.809879,1,person_left,Person_001
+01-11-2025 19:29:25.759317,1,person_detected,Person_001
+01-11-2025 19:29:25.885889,0,person_left,Person_001
+01-11-2025 19:29:26.765842,0,person_detected,Person_001
+01-11-2025 19:29:31.721194,0,person_left,Person_001
+01-11-2025 19:29:31.950351,1,person_left,Person_001
+01-11-2025 19:29:32.388371,0,person_detected,Person_001
+01-11-2025 19:29:34.526912,1,objects_abandoned,laptop
+01-11-2025 19:29:35.146921,1,abandoned_objects_picked,laptop
+01-11-2025 19:29:36.766374,0,person_left,Person_001
+01-11-2025 19:29:37.375493,0,person_detected,Person_001
+01-11-2025 19:29:38.558561,1,person_detected,Person_001
+01-11-2025 19:29:39.089478,1,person_left,Person_001
+01-11-2025 19:29:43.992245,1,person_detected,Person_002
+01-11-2025 19:29:44.514089,1,person_left,Person_002
+01-11-2025 19:29:48.482549,1,objects_abandoned,laptop
+01-11-2025 19:29:49.505999,1,person_detected,Person_001
+01-11-2025 19:29:49.506315,1,objects_with_person,Person_001: cell phone
+01-11-2025 19:29:49.506659,1,abandoned_objects_picked,laptop
+01-11-2025 19:29:50.088261,1,person_left,Person_001
+01-11-2025 19:29:50.088640,1,objects_removed,None: cell phone
+01-11-2025 19:29:50.088864,1,objects_abandoned,cell phone
+01-11-2025 19:29:51.618336,0,person_left,Person_001
+01-11-2025 19:29:51.618793,0,objects_abandoned,tv
+01-11-2025 19:29:52.272261,0,person_detected,Person_001
+01-11-2025 19:29:52.272655,0,abandoned_objects_picked,tv
+01-11-2025 19:29:54.147088,0,objects_with_person,Person_001: cell phone
+01-11-2025 19:29:54.493778,1,person_detected,Person_001
+01-11-2025 19:29:55.182684,0,objects_removed,Person_001: cell phone
+01-11-2025 19:29:55.335955,1,person_left,Person_001
+01-11-2025 19:29:56.179608,1,person_detected,Person_003
+01-11-2025 19:30:00.217983,0,person_detected,Person_002
+01-11-2025 19:30:01.178474,0,person_detected,Person_001
+01-11-2025 19:30:01.255583,1,person_left,Person_003
+01-11-2025 19:30:01.255930,1,abandoned_objects_picked,cell phone
+01-11-2025 19:30:02.205801,1,person_detected,Person_001
+01-11-2025 19:30:02.811577,0,objects_with_person,Person_001: cell phone
+01-11-2025 19:30:03.640988,0,objects_removed,Person_001: cell phone
+01-11-2025 19:30:04.458548,0,objects_with_person,Person_001: cell phone
+01-11-2025 19:30:05.349567,0,objects_removed,Person_001: cell phone
+01-11-2025 19:30:05.630343,1,person_left,Person_001
