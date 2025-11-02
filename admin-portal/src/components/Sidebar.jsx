@@ -3,13 +3,13 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const nav = [
-  { to: '/', label: 'Dashboard', icon: '🏠' },
-  { to: '/backtracing', label: 'Backtracing', icon: '🧭' },
-  { to: '/alerts', label: 'Alerts', icon: '🚨', badge: 'LIVE' },
-  { to: '/parking', label: 'Parking', icon: '🅿️' },
-  { to: '/fireportal', label: 'Fire Portal', icon: '🔥' },
-  { to: '/queuing', label: 'Queuing', icon: '📊' },
-  { to: '/blacklist', label: 'Add Blacklist', icon: '⛔' },
+  { to: '/', label: 'Dashboard'},
+  { to: '/backtracing', label: 'Backtracing' },
+  { to: '/alerts', label: 'Alerts'},
+  { to: '/parking', label: 'Parking' },
+  { to: '/fireportal', label: 'Fire Portal'},
+  { to: '/queuing', label: 'Queuing'},
+  { to: '/blacklist', label: 'Add Blacklist' },
 ];
 
 export default function Sidebar() {

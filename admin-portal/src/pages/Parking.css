@@ -1,0 +1,290 @@
+/* ========= Admin Parking (SCOPED) =======================================
+   All styles are prefixed with .adminParking- to avoid global conflicts.
+   PURE CSS, no Tailwind classes.
+========================================================================= */
+
+.adminParking-pageWrapper {
+  padding: 16px;
+  color: #e5e7eb;
+  background: radial-gradient(1200px 800px at 10% 10%, #0c121a 0%, #0b0f14 50%);
+  min-height: 100%;
+}
+.adminParking-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Header */
+.adminParking-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.adminParking-title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: .2px;
+}
+.adminParking-muted { color: #9ca3af; }
+.adminParking-muted.small { font-size: 12px; }
+
+.adminParking-toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.adminParking-input,
+.adminParking-select {
+  height: 40px;
+  border: 1px solid #2a3340;
+  background: #0e1117;
+  color: #e5e7eb;
+  border-radius: 10px;
+  padding: 0 12px;
+  outline: none;
+  min-width: 220px;
+  transition: box-shadow .15s;
+}
+.adminParking-input:focus,
+.adminParking-select:focus {
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, .4);
+}
+
+/* Buttons */
+.adminParking-btn {
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid #2a3340;
+  background: #121521;
+  color: #fff;
+  padding: 0 12px;
+  cursor: pointer;
+  transition: background .15s, opacity .15s, transform .03s;
+}
+.adminParking-btn:hover { background: #161a28; }
+.adminParking-btn:active { transform: translateY(1px); }
+.adminParking-btn--icon { width: 40px; padding: 0; text-align: center; }
+.adminParking-btn--outline { background: transparent; }
+.adminParking-btn--primary { background: #2563eb; border-color: #2563eb; }
+.adminParking-btn--primary:hover { background: #1d4ed8; }
+.adminParking-btn--green { background: #0b4033; border-color: #0b4033; }
+.adminParking-btn--green:hover { background: #0e4f40; }
+.adminParking-btn--danger { background: #3a0b12; border-color: #3a0b12; }
+.adminParking-btn--danger:hover { background: #4a0e17; }
+.adminParking-btn.is-disabled,
+.adminParking-btn:disabled { opacity: .6; cursor: not-allowed; }
+.adminParking-btn.is-loading { opacity: .7; }
+
+/* KPIs */
+.adminParking-kpis {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+}
+@media (max-width: 900px) {
+  .adminParking-kpis { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+.adminParking-card {
+  background: radial-gradient(1000px 250px at -10% -20%, #182133, #0f1422 40%, #0c101b 60%, #0b0c11 95%);
+  border: 1px solid #2a3340;
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.25);
+}
+.adminParking-cardLabel { color: #9ca3af; font-size: 13px; }
+.adminParking-cardValue { font-size: 24px; font-weight: 700; margin-top: 6px; }
+.adminParking-textRose    { color: #f43f5e; }
+.adminParking-textEmerald { color: #10b981; }
+.adminParking-textMuted   { color: #9aa0aa; }
+
+/* Tabs */
+.adminParking-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.adminParking-tab {
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1px solid #2a3340;
+  background: #10131c;
+  color: #e5e7eb;
+  cursor: pointer;
+  font-weight: 600;
+  letter-spacing: .2px;
+  transition: background .15s, border-color .15s, transform .05s;
+}
+.adminParking-tab:hover { background: #131829; }
+.adminParking-tab:active { transform: translateY(1px); }
+.adminParking-tab.is-active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+/* Subtoolbar + pills */
+.adminParking-subtoolbar {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
+}
+.adminParking-pillRow { display: flex; gap: 10px; align-items: center; }
+.adminParking-pill {
+  background: #0f1420;
+  border: 1px solid #2a3340;
+  color: #d1d5db;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+.adminParking-pill--outline {
+  background: transparent;
+}
+
+/* Actions row */
+.adminParking-actions { display: flex; gap: 8px; align-items: center; }
+
+/* Panel */
+.adminParking-panel {
+  border: 1px solid #2a3340;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #0b0f14cc;
+  box-shadow: 0 6px 18px rgba(0,0,0,.25);
+}
+.adminParking-panelHeader {
+  padding: 14px 16px;
+  border-bottom: 1px solid #2a3340;
+  font-weight: 700;
+}
+.adminParking-panelBody { padding: 16px; }
+
+/* Grid of slots */
+.adminParking-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0,1fr));
+  gap: 10px;
+  max-height: 60vh;
+  overflow: auto;
+}
+@media (max-width: 800px) { .adminParking-grid { grid-template-columns: repeat(3, minmax(0,1fr)); } }
+@media (max-width: 520px) { .adminParking-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+
+/* Slot tile */
+.adminParking-slot {
+  position: relative;
+  border-radius: 14px;
+  padding: 14px;
+  text-align: left;
+  border: 1px solid rgba(255,255,255,.06);
+  background: linear-gradient(160deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+  transition: transform .1s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
+  color: #e5e7eb;
+}
+.adminParking-slot:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(0,0,0,.25);
+}
+.adminParking-slot.is-selected {
+  box-shadow: 0 0 0 2px rgba(37,99,235,.7) inset, 0 8px 22px rgba(0,0,0,.25);
+}
+.adminParking-slotTop { display: flex; justify-content: space-between; align-items: center; }
+.adminParking-slotCode { font-weight: 800; font-size: 18px; letter-spacing: .4px; }
+.adminParking-slotLabel { margin-top: 6px; font-size: 12px; opacity: .9; }
+.adminParking-slotTime { margin-top: 4px; font-size: 11px; opacity: .6; }
+.adminParking-chip {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #20242f;
+  color: #cbd5e1;
+  border: 1px solid #2a3340;
+}
+
+/* Status states */
+.adminParking-slot.status-available {
+  background: rgba(16,185,129,.12);
+  border-color: rgba(16,185,129,.35);
+  color: #a7f3d0;
+}
+.adminParking-slot.status-occupied {
+  background: rgba(244,63,94,.12);
+  border-color: rgba(244,63,94,.35);
+  color: #fecdd3;
+}
+.adminParking-slot.status-disabled {
+  background: rgba(113,113,122,.16);
+  border-color: rgba(113,113,122,.35);
+  color: #cbd5e1;
+}
+.adminParking-slot.status-reserved {
+  background: rgba(245,158,11,.14);
+  border-color: rgba(245,158,11,.40);
+  color: #fde68a;
+}
+
+/* selected badge */
+.adminParking-selectedBadge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 999px;
+}
+
+/* Legend */
+.adminParking-legend {
+  display: flex; gap: 16px; align-items: center; color: #cbd5e1; margin-top: 12px; font-size: 12px;
+}
+.adminParking-legendDot {
+  display:inline-block; width:10px; height:10px; border-radius:999px; margin-right:6px;
+}
+.adminParking-legendDot--emerald { background:#10b981; }
+.adminParking-legendDot--rose    { background:#f43f5e; }
+.adminParking-legendDot--amber   { background:#f59e0b; }
+.adminParking-legendDot--muted   { background:#71717a; }
+
+/* Modal */
+.adminParking-modalBackdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px;
+}
+.adminParking-modal {
+  width: min(560px, 92vw);
+  border: 1px solid #2a3340;
+  border-radius: 16px;
+  background: #0f1420;
+  box-shadow: 0 6px 18px rgba(0,0,0,.25);
+  overflow: hidden;
+}
+.adminParking-modalHeader {
+  padding: 14px 16px; border-bottom: 1px solid #2a3340; font-weight: 700;
+}
+.adminParking-modalBody {
+  padding: 16px; display: flex; flex-direction: column; gap: 12px;
+}
+.adminParking-modalFooter {
+  padding: 14px 16px; border-top: 1px solid #2a3340; display: flex; justify-content: flex-end; gap: 10px;
+}
+.adminParking-label { font-weight: 600; font-size: 13px; }
+.mt-4 { margin-top: 8px; }
+
+/* Switch */
+.adminParking-toggleRow {
+  display:flex; align-items:center; justify-content:space-between;
+  border: 1px solid #2a3340; padding: 12px; border-radius: 12px; background: #101420;
+}
+.adminParking-switch {
+  position: relative; width: 44px; height: 26px; border-radius: 999px;
+  background: #2b2f3d; border: 1px solid #2a3340; transition: background .2s;
+}
+.adminParking-switchKnob {
+  position: absolute; top: 2px; left: 2px; width: 22px; height: 22px;
+  border-radius: 999px; background: #fff; transition: transform .2s;
+}
+.adminParking-switch.is-on { background: #2563eb; }
+.adminParking-switch.is-on .adminParking-switchKnob { transform: translateX(18px); }
