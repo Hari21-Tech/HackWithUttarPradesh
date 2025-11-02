@@ -11,12 +11,11 @@ import { SocketProvider } from './context/SocketContext';
 import { QueueProvider } from './queuecontext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
-// Headless (renders nothing)
-import SafetyAlertsHeadless from './safety-alerts';
+// ✅ Headless (renders nothing) — moved to a dedicated file
+import HeadlessAlerts from './headless-alerts';
 
-// Global handler: tray/center only (no in-app banner)
 Notifications.setNotificationHandler({
-  handleNotification: async (): Promise<Notifications.NotificationBehavior> => ({
+  handleNotification: async () => ({
     shouldShowAlert: false,
     shouldShowBanner: false,
     shouldShowList: true,
@@ -35,16 +34,15 @@ export default function RootLayout() {
     <SocketProvider>
       <QueueProvider>
         <SafeAreaProvider>
-          <SafetyAlertsHeadless />
+          {/* Headless listener lives here, but renders nothing */}
+          <HeadlessAlerts />
           <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
             <Stack>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-              {/* (Optional) keep if you also want to access this screen outside tabs */}
-              <Stack.Screen
-                name="safety-alerts-demo"
-                options={{ title: 'Safety Alerts Demo', headerShown: true }}
-              />
+              {/* Keep demo as a stack screen, accessible from settings page */}
+              <Stack.Screen name="safety-alerts-demo" options={{ title: 'Safety Alerts Demo' }} />
+              <Stack.Screen name="safety-alerts" options={{ title: 'Safety Alerts' }} />
             </Stack>
             <StatusBar style={isDark ? 'light' : 'dark'} />
           </ThemeProvider>

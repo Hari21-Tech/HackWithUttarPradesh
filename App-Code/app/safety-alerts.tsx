@@ -1,108 +1,103 @@
 // app/safety-alerts.tsx
-import React, { useEffect, useRef, useState } from 'react';
-import { Platform, AppState, AppStateStatus } from 'react-native';
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
-import * as Speech from 'expo-speech';
-import { Audio } from 'expo-av';
+import React, { useState } from "react";
+import { View, Text, StyleSheet, SafeAreaView, Switch, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
-type FireAlertPayload = {
-  type: 'FIRE_ALERT';
-  site?: string; zone?: string; dangerCamera?: string; safeCamera?: string; safeExit?: string; instruction?: string;
-  demo?: boolean; // <-- demo flag to avoid rescheduling
+const BRAND = {
+  bg: "#F6F7FB",
+  card: "#FFFFFF",
+  text: "#0E1B26",
+  sub: "#6E7C87",
+  border: "rgba(14,27,38,0.08)",
+  primary: "#1E62D0",
+  chip: "#EEF3F7",
 };
 
-function tryParse<T>(s?: string | null): T | null { if (!s) return null; try { return JSON.parse(s) as T; } catch { return null; } }
+export default function SafetyAlertsSettings() {
+  const r = useRouter();
+  const [muteMobile, setMuteMobile] = useState(false);
+  const [vibrate, setVibrate] = useState(true);
+  const [showBanners, setShowBanners] = useState(true);
 
-export default function SafetyAlertsHeadless() {
-  const [, setToken] = useState<string | null>(null);
-  const appState = useRef<AppStateStatus>(AppState.currentState);
+  return (
+    <View style={{ flex: 1, backgroundColor: BRAND.bg }}>
+      <SafeAreaView>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => r.back()} style={styles.iconBtn}>
+            <Ionicons name="chevron-back" size={22} color={BRAND.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Safety Alerts</Text>
+          <View style={styles.iconBtn}>
+            <Ionicons name="notifications-outline" size={20} color={BRAND.text} />
+          </View>
+        </View>
+      </SafeAreaView>
 
-  useEffect(() => { (async () => {
-    try {
-      await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: true,
-        allowsRecordingIOS: false,
-        staysActiveInBackground: true,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
-      });
-    } catch (e) { console.warn('Audio mode config failed:', e); }
-  })(); }, []);
+      <View style={{ padding: 16, gap: 12 }}>
+        <Card title="Mute announcements on mobile">
+          <Row>
+            <Text style={styles.rowText}>Mute TTS announcements</Text>
+            <Switch value={muteMobile} onValueChange={setMuteMobile} />
+          </Row>
+          <Text style={styles.help}>If enabled, you’ll still see alerts as banners.</Text>
+        </Card>
 
-  useEffect(() => { (async () => {
-    const granted = await requestPermissions(); if (!granted) return;
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'default',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#FF231F7C',
-        sound: 'default',
-        bypassDnd: true,
-        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-      });
-    }
-    try { const devToken = await Notifications.getDevicePushTokenAsync(); setToken(devToken.data); }
-    catch { const expoToken = (await Notifications.getExpoPushTokenAsync()).data; setToken(expoToken); }
-  })(); }, []);
+        <Card title="Notification options">
+          <Row>
+            <Text style={styles.rowText}>Banners</Text>
+            <Switch value={showBanners} onValueChange={setShowBanners} />
+          </Row>
+          <Row>
+            <Text style={styles.rowText}>Vibrate</Text>
+            <Switch value={vibrate} onValueChange={setVibrate} />
+          </Row>
+        </Card>
 
-  useEffect(() => {
-    const sub = Notifications.addNotificationReceivedListener((notif) => {
-      try { const data = notif?.request?.content?.data ?? {}; handleIncomingPayload(data as Record<string, unknown>); }
-      catch (e) { console.warn('Notification parse error:', e); }
-    });
-    const respSub = Notifications.addNotificationResponseReceivedListener(() => {});
-    const appStateSub = AppState.addEventListener('change', (next) => { appState.current = next; });
-    return () => { sub.remove(); respSub.remove(); appStateSub.remove(); };
-  }, []);
-
-  const handleIncomingPayload = (data: Record<string, unknown>) => {
-    const meta = tryParse<FireAlertPayload>(String((data as any)?.meta ?? '')) ?? (data as unknown as FireAlertPayload);
-    if (meta?.type !== 'FIRE_ALERT') return;
-
-    // *** CRITICAL: if this came from demo page, do NOT reschedule another notification ***
-    if (meta.demo === true) {
-      // Let the demo page handle its own TTS loop; do nothing here to avoid feedback loops
-      return;
-    }
-
-    const title = 'FIRE ALERT';
-    const site = meta.site ? ` at ${meta.site}` : '';
-    const zone = meta.zone ? `, zone ${meta.zone}` : '';
-    const danger = meta.dangerCamera ? `Detected near ${meta.dangerCamera}.` : '';
-    const safe = meta.safeCamera ? `Safe route via ${meta.safeCamera}.` : '';
-    const exit = meta.safeExit ? `Use ${meta.safeExit}.` : '';
-    const instruction = meta.instruction ?? 'Please proceed calmly to the indicated safe exit.';
-    const displayBody = `${danger} ${safe} ${exit}`.trim();
-
-    // Mirror to system tray / notification center (one-time)
-    Notifications.scheduleNotificationAsync({
-      content: { title: `${title}${site}${zone}`, body: displayBody.length > 0 ? displayBody : instruction, sound: 'default', data },
-      trigger: null,
-    });
-
-    // Single TTS pass for real push (no loop here)
-    speakEvac(instruction, { site: meta.site, zone: meta.zone, safeExit: meta.safeExit });
-  };
-
-  const speakEvac = (instruction: string, extra: { site?: string; zone?: string; safeExit?: string } = {}) => {
-    try { Speech.stop(); } catch {}
-    const head = 'Attention. Fire alert.';
-    const site = extra.site ? ` Location: ${extra.site}.` : '';
-    const zone = extra.zone ? ` Zone: ${extra.zone}.` : '';
-    const exit = extra.safeExit ? ` Use exit: ${extra.safeExit}.` : '';
-    const message = `${head}${site}${zone} ${instruction}.${exit}`.replace(/\s+/g, ' ').trim();
-    Speech.speak(message, { language: 'en-US', pitch: 1.0, rate: Platform.OS === 'ios' ? 0.52 : 0.9 });
-  };
-
-  return null; // Headless
+        <TouchableOpacity
+          activeOpacity={0.9}
+          style={styles.testBtn}
+          onPress={() => r.push("/safety-alerts-demo")}
+        >
+          <Ionicons name="megaphone-outline" size={18} color="#fff" />
+          <Text style={styles.testText}>Open Demo</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 }
 
-async function requestPermissions(): Promise<boolean> {
-  if (!Device.isDevice) return true;
-  const { status: existing } = await Notifications.getPermissionsAsync();
-  let final = existing;
-  if (existing !== 'granted') { const { status } = await Notifications.requestPermissionsAsync(); final = status; }
-  return final === 'granted';
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>{title}</Text>
+      {children}
+    </View>
+  );
 }
+function Row({ children }: { children: React.ReactNode }) {
+  return <View style={styles.row}>{children}</View>;
+}
+
+const styles = StyleSheet.create({
+  header: { height: 56, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 12 },
+  iconBtn: {
+    height: 38, width: 38, borderRadius: 12, alignItems: "center", justifyContent: "center",
+    backgroundColor: BRAND.card, borderWidth: 1, borderColor: BRAND.border,
+  },
+  headerTitle: { flex: 1, textAlign: "center", marginRight: 38, color: BRAND.text, fontSize: 18, fontWeight: "800" },
+
+  card: {
+    backgroundColor: BRAND.card, borderRadius: 16, borderWidth: 1, borderColor: BRAND.border, padding: 12,
+  },
+  cardTitle: { color: BRAND.text, fontWeight: "800", marginBottom: 8 },
+  row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 8 },
+  rowText: { color: BRAND.text, fontWeight: "700" },
+  help: { color: BRAND.sub, fontSize: 12, marginTop: 6 },
+
+  testBtn: {
+    marginTop: 4, height: 48, borderRadius: 14, backgroundColor: BRAND.primary,
+    alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8,
+  },
+  testText: { color: "#fff", fontWeight: "800" },
+});

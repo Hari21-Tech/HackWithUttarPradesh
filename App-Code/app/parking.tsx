@@ -1,344 +1,450 @@
 // app/parking.tsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
-  StatusBar,
-  Animated,
-  ActivityIndicator,
-  Dimensions,
+  SafeAreaView,
+  TouchableOpacity,
   ScrollView,
+  Dimensions,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useSocket } from './context/SocketContext';
 
-type Spot = {
+const { width } = Dimensions.get('window');
+
+type Slot = {
   id: string;
-  floor: number;
-  isAvailable: boolean;
+  label: string;
+  taken?: boolean;
+  ev?: boolean;
 };
 
-// 🅿️ 100 mock spots (25 per floor × 4 floors)
-const mockParkingSpots: Spot[] = Array.from({ length: 100 }, (_, i) => {
-  const floor = Math.floor(i / 25) + 1;
-  const row = Math.floor((i % 25) / 5) + 1;
-  const col = String.fromCharCode(65 + (i % 5)); // A–E
-  const id = `${col}${row}`;
-  const isAvailable = Math.random() > 0.3; // 70% available
-  return { id, floor, isAvailable };
-});
+const BRAND = {
+  bg: '#F6F7FB',
+  card: '#FFFFFF',
+  text: '#0E1B26',
+  sub: '#6E7C87',
+  primary: '#6B5AED', // purple
+  primarySoft: '#EEEAFE',
+  success: '#2DBE7E',
+  border: 'rgba(14,27,38,0.08)',
+};
 
-export default function Parking() {
-  const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
-  const [availableSpots, setAvailableSpots] = useState<Spot[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [currentFloor, setCurrentFloor] = useState<number>(1);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+const BUILDINGS = ['AltOza', 'Burbun', 'Choco', 'Dalian'];
+const FLOORS = ['B2', 'B1', 'G', 'P1', 'P2'];
 
-  const { socket } = useSocket();
+export default function ParkingScreen() {
+  const router = useRouter();
+  const [building, setBuilding] = useState('Choco');
+  const [floor, setFloor] = useState('P2');
+  const [selected, setSelected] = useState<string | null>(null);
 
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 500,
-      useNativeDriver: true,
-    }).start();
+  const slots: Slot[] = useMemo(() => {
+    const ids: Slot[] = Array.from({ length: 36 }).map((_, i) => {
+      const label = `${floor}-${(i + 1).toString().padStart(3, '0')}`;
+      return { id: label, label };
+    });
+    ids[2].taken = true;
+    ids[5].ev = true;
+    ids[8].taken = true;
+    ids[9].taken = true;
+    ids[12].ev = true;
+    ids[18].taken = true;
+    ids[23].ev = true;
+    ids[28].taken = true;
+    return ids;
+  }, [floor]);
 
-    // fallback to mock if no socket
-    if (!socket) {
-      setAvailableSpots(mockParkingSpots);
-      setSelectedSpot(mockParkingSpots.find((s) => s.isAvailable) ?? null);
-    }
-  }, [socket]);
+  const availableCount = slots.filter(s => !s.taken).length;
 
-  const floors = Array.from(new Set(availableSpots.map((s) => s.floor))).sort((a, b) => a - b);
-  const spotsForFloor = availableSpots.filter((s) => s.floor === currentFloor);
+  const onSelect = (s: Slot) => {
+    if (s.taken) return;
+    setSelected(prev => (prev === s.id ? null : s.id));
+  };
 
-  const windowWidth = Dimensions.get('window').width;
-  const numColumns = windowWidth > 420 ? 7 : windowWidth > 360 ? 6 : 5;
-  const itemSize = Math.floor((windowWidth - 48) / numColumns); // smaller grid
-
-  const handleSelectSpot = (spot: Spot) => setSelectedSpot(spot);
-
-  const handleRequestNewSpot = () => {
-    if (availableSpots.length <= 1) return;
-    const availOnly = availableSpots.filter((s) => s.isAvailable);
-    const next = availOnly[Math.floor(Math.random() * availOnly.length)];
-    setSelectedSpot(next);
-    setCurrentFloor(next.floor);
+  const onContinue = () => {
+    if (!selected) return;
+    router.push({
+      pathname: '/modal',
+      params: { title: 'Slot reserved', message: `Parking slot ${selected} reserved for 15 minutes.` },
+    } as any);
   };
 
   return (
-    <LinearGradient colors={['#071A2A', '#0F3B66', '#2B6AD6']} style={styles.gradient}>
-      <StatusBar translucent barStyle="light-content" />
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>Parking Helper</Text>
-        <Text style={styles.subtitle}>Tap a spot or request another</Text>
+    <View style={{ flex: 1, backgroundColor: BRAND.bg }}>
+      <SafeAreaView>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
+            <Ionicons name="chevron-back" size={22} color={BRAND.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Parking</Text>
+          <TouchableOpacity style={styles.iconBtn}>
+            <Ionicons name="person-circle-outline" size={22} color={BRAND.text} />
+          </TouchableOpacity>
+        </View>
 
-        {/* Selected Spot Card */}
-        <Animated.View style={{ opacity: fadeAnim, width: '100%' }}>
-          <BlurView intensity={90} tint="dark" style={styles.card}>
-            <Ionicons name="car-outline" size={40} color="#EAF6FF" />
-            <View style={styles.spotTextContainer}>
-              {selectedSpot ? (
-                <>
-                  <Text style={styles.spotLabel}>Selected Spot</Text>
-                  <Text style={styles.spotValue}>
-                    Floor {selectedSpot.floor} — {selectedSpot.id}
-                  </Text>
-                </>
-              ) : (
-                <Text style={styles.noSpot}>No spots selected</Text>
-              )}
+        {/* Greeting card */}
+        <View style={styles.heroCard}>
+          <View style={{ flex: 1, gap: 6 }}>
+            <Text style={styles.heroTitle}>Need parking?</Text>
+            <Text style={styles.heroSub}>Book in any building</Text>
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+              <PillButton
+                label="Book now"
+                icon="flash-outline"
+                filled
+                onPress={() => {}}
+              />
+              <PillButton
+                label="Explore"
+                icon="navigate-outline"
+                onPress={() => {}}
+              />
             </View>
-          </BlurView>
-        </Animated.View>
+          </View>
+          <View style={styles.heroBadge}>
+            <Ionicons name="car-sport-outline" size={22} color={BRAND.primary} />
+          </View>
+        </View>
+      </SafeAreaView>
 
-        {/* Request Button */}
-        <TouchableOpacity
-          style={styles.button}
-          onPress={handleRequestNewSpot}
-          disabled={loading}
-          activeOpacity={0.85}
+      <ScrollView contentContainerStyle={{ paddingBottom: 28 }}>
+        {/* Stats row */}
+        <View style={styles.statsRow}>
+          <StatCard
+            title={`${availableCount} slots`}
+            subtitle={`Available in ${building} ${floor}`}
+            icon="checkmark-circle-outline"
+            tone="success"
+          />
+          <StatCard
+            title={selected ? `Selected ${selected}` : 'No slot selected'}
+            subtitle="Tap a slot below"
+            icon="calendar-outline"
+            tone="primary"
+          />
+        </View>
+
+        {/* Building selector */}
+        <SectionHeader title="Select building & floor" />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.hScroll}
         >
-          <LinearGradient colors={['#4C89FF', '#1E62D0']} style={styles.buttonGradient}>
-            {loading ? (
-              <ActivityIndicator color="#fff" style={{ marginRight: 10 }} />
-            ) : (
-              <Ionicons name="refresh-outline" size={20} color="#fff" />
-            )}
-            <Text style={styles.buttonText}>{loading ? 'Searching...' : 'Request Another Spot'}</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+          {BUILDINGS.map(b => (
+            <Chip
+              key={b}
+              label={b}
+              active={b === building}
+              onPress={() => setBuilding(b)}
+            />
+          ))}
+        </ScrollView>
 
-        {/* Floor Tabs */}
-        <View style={styles.floorTabsContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 8 }}>
-            {floors.map((f) => {
-              const active = f === currentFloor;
-              return (
-                <TouchableOpacity
-                  key={f}
-                  onPress={() => setCurrentFloor(f)}
-                  style={[styles.floorTab, active && styles.floorTabActive]}
-                  activeOpacity={0.85}
-                >
-                  <Text style={[styles.floorTabText, active && styles.floorTabTextActive]}>
-                    Floor {f}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        {/* Floor Grid */}
-        <View style={[styles.gridContainer]}>
-          <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-            <View style={styles.gridRow}>
-              {spotsForFloor.map((spot) => {
-                const isSelected = selectedSpot?.id === spot.id;
-                const bgColor = !spot.isAvailable
-                  ? 'rgba(255, 0, 0, 0.2)' // red for occupied
-                  : 'rgba(0, 255, 0, 0.15)'; // green for available
-                const borderColor = !spot.isAvailable
-                  ? 'rgba(255, 0, 0, 0.8)'
-                  : 'rgba(0, 255, 0, 0.6)';
-
-                return (
-                  <TouchableOpacity
-                    key={`${spot.floor}-${spot.id}`}
-                    onPress={() => handleSelectSpot(spot)}
-                    style={[
-                      styles.gridItem,
-                      { width: itemSize, height: 65, backgroundColor: bgColor, borderColor },
-                      isSelected && styles.gridSelected,
-                    ]}
-                    activeOpacity={0.85}
-                  >
-                    <Text
-                      style={[styles.gridItemText, isSelected && styles.gridItemTextSelected]}
-                      numberOfLines={1}
-                    >
-                      {spot.id}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </ScrollView>
-        </View>
+        {/* Floor selector */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={[styles.hScroll, { marginTop: -6 }]}
+        >
+          {FLOORS.map(f => (
+            <Chip
+              key={f}
+              label={f}
+              active={f === floor}
+              onPress={() => setFloor(f)}
+              small
+            />
+          ))}
+        </ScrollView>
 
         {/* Legend */}
-        <View style={styles.legendContainer}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: 'rgba(0,255,0,0.6)' }]} />
-            <Text style={styles.legendText}>Available</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: 'rgba(255,0,0,0.7)' }]} />
-            <Text style={styles.legendText}>Occupied</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: 'rgba(76,137,255,0.8)' }]} />
-            <Text style={styles.legendText}>Selected</Text>
-          </View>
+        <View style={styles.legend}>
+          <LegendDot color={BRAND.card} label="Available" border />
+          <LegendDot color="#EFEFF7" label="Selected" border />
+          <LegendDot color="#EAECEF" label="Taken" />
+          <LegendDot color="#E6FFF2" label="EV" border />
         </View>
 
-        <Text style={styles.footerText}>{availableSpots.length} total spots • 25 per floor</Text>
-      </SafeAreaView>
-    </LinearGradient>
+        {/* Grid */}
+        <View style={styles.grid}>
+          {slots.map((s) => {
+            const isSelected = s.id === selected;
+            return (
+              <TouchableOpacity
+                key={s.id}
+                activeOpacity={s.taken ? 1 : 0.8}
+                onPress={() => onSelect(s)}
+                style={[
+                  styles.slot,
+                  s.taken && styles.slotTaken,
+                  isSelected && styles.slotSelected,
+                  s.ev && styles.slotEV,
+                ]}
+              >
+                <Ionicons
+                  name="car-outline"
+                  size={18}
+                  color={s.taken ? '#98A1A8' : BRAND.text}
+                />
+                <Text
+                  style={[
+                    styles.slotLabel,
+                    s.taken && { color: '#98A1A8' },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {s.label}
+                </Text>
+                {s.ev && (
+                  <Ionicons name="flash-outline" size={14} color={BRAND.success} />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Continue button */}
+        <View style={{ paddingHorizontal: 18, marginTop: 8 }}>
+          <TouchableOpacity
+            onPress={onContinue}
+            activeOpacity={selected ? 0.85 : 1}
+            style={[styles.cta, !selected && { opacity: 0.5 }]}
+          >
+            <Text style={styles.ctaText}>
+              {selected ? `Continue • ${selected}` : 'Select a slot to continue'}
+            </Text>
+            <Ionicons name="arrow-forward" size={18} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
+/* ---------- Small components ---------- */
+
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <View style={{ paddingHorizontal: 18, marginTop: 14, marginBottom: 6 }}>
+      <Text style={{ fontSize: 16, fontWeight: '800', color: BRAND.text }}>{title}</Text>
+    </View>
+  );
+}
+
+function StatCard({
+  title, subtitle, icon, tone,
+}: {
+  title: string; subtitle: string; icon: keyof typeof Ionicons.glyphMap; tone: 'primary' | 'success';
+}) {
+  const color = tone === 'primary' ? BRAND.primary : BRAND.success;
+  const bg = tone === 'primary' ? '#F2F0FF' : '#ECFFF6';
+  return (
+    <View style={[styles.statCard, { backgroundColor: bg }]}>
+      <View style={styles.statIcon}>
+        <Ionicons name={icon} size={18} color={color} />
+      </View>
+      <Text style={styles.statTitle}>{title}</Text>
+      <Text style={styles.statSub}>{subtitle}</Text>
+    </View>
+  );
+}
+
+function PillButton({
+  label, icon, onPress, filled,
+}: {
+  label: string; icon: keyof typeof Ionicons.glyphMap; onPress: () => void; filled?: boolean;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.85}
+      style={[
+        styles.pill,
+        filled ? { backgroundColor: BRAND.primary } : { backgroundColor: BRAND.card, borderWidth: 1, borderColor: BRAND.border },
+      ]}
+    >
+      <Ionicons
+        name={icon}
+        size={16}
+        color={filled ? '#fff' : BRAND.text}
+      />
+      <Text style={[styles.pillText, filled && { color: '#fff' }]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function Chip({
+  label, active, small, onPress,
+}: {
+  label: string; active?: boolean; small?: boolean; onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.85}
+      style={[
+        styles.chip,
+        small && { height: 34, paddingHorizontal: 12 },
+        active
+          ? { backgroundColor: BRAND.primary, borderColor: BRAND.primary }
+          : { backgroundColor: BRAND.card, borderColor: BRAND.border },
+      ]}
+    >
+      <Text style={[styles.chipText, active && { color: '#fff' }]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function LegendDot({ color, label, border }: { color: string; label: string; border?: boolean }) {
+  return (
+    <View style={styles.legendItem}>
+      <View style={[styles.legendDot, { backgroundColor: color }, border && { borderWidth: 1, borderColor: BRAND.border }]} />
+      <Text style={styles.legendText}>{label}</Text>
+    </View>
+  );
+}
+
+/* ---------- Styles ---------- */
+
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 30,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#EAF6FF',
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: '#CFE7FF',
-    marginBottom: 14,
-  },
-  card: {
-    width: '100%',
+  header: {
+    height: 56,
+    paddingHorizontal: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    padding: 16,
+    gap: 12,
+  },
+  iconBtn: {
+    height: 38, width: 38, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: BRAND.card,
+    borderWidth: 1, borderColor: BRAND.border,
+  },
+  headerTitle: { flex: 1, textAlign: 'center', marginRight: 38, fontSize: 18, fontWeight: '800', color: BRAND.text },
+
+  heroCard: {
+    marginHorizontal: 18,
+    marginTop: 8,
+    backgroundColor: BRAND.card,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.22,
-    shadowRadius: 18,
-    elevation: 10,
-    marginBottom: 14,
-  },
-  spotTextContainer: { marginLeft: 14, flex: 1 },
-  spotLabel: {
-    color: '#D9E9FF',
-    fontSize: 14,
-    opacity: 0.95,
-  },
-  spotValue: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  noSpot: {
-    color: '#FFD6D6',
-    fontSize: 14,
-    fontStyle: 'italic',
-  },
-  button: {
-    width: '100%',
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  buttonGradient: {
+    borderColor: BRAND.border,
+    padding: 14,
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderRadius: 12,
+    gap: 12,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '700',
-    marginLeft: 8,
+  heroTitle: { fontSize: 16, fontWeight: '800', color: BRAND.text },
+  heroSub: { fontSize: 12, color: BRAND.sub },
+  heroBadge: {
+    height: 44, width: 44, borderRadius: 12,
+    backgroundColor: BRAND.primarySoft,
+    alignItems: 'center', justifyContent: 'center',
   },
-  floorTabsContainer: {
-    width: '100%',
-    marginTop: 18,
+
+  statsRow: {
+    paddingHorizontal: 18,
+    marginTop: 12,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: BRAND.border,
+  },
+  statIcon: {
+    height: 28, width: 28, borderRadius: 8, backgroundColor: '#fff',
+    alignItems: 'center', justifyContent: 'center',
     marginBottom: 8,
   },
-  floorTab: {
-    paddingVertical: 6,
+  statTitle: { fontSize: 16, fontWeight: '800', color: BRAND.text },
+  statSub: { fontSize: 12, color: BRAND.sub, marginTop: 4 },
+
+  hScroll: { paddingHorizontal: 18, gap: 10, paddingVertical: 10 },
+
+  chip: {
+    height: 40,
     paddingHorizontal: 14,
-    marginHorizontal: 6,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  floorTabActive: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderColor: 'rgba(255,255,255,0.18)',
-  },
-  floorTabText: {
-    color: '#CFE7FF',
-    fontWeight: '600',
-  },
-  floorTabTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-  },
-  gridContainer: {
-    width: '100%',
-    flex: 1,
-    marginTop: 10,
-  },
-  gridRow: {
+  chipText: { fontSize: 14, fontWeight: '700', color: BRAND.text },
+
+  // 🔧 Added these to fix the error
+  pill: {
+    height: 36,
+    paddingHorizontal: 14,
+    borderRadius: 999,
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
     gap: 8,
-    justifyContent: 'center',
   },
-  gridItem: {
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-  },
-  gridSelected: {
-    backgroundColor: 'rgba(76,137,255,0.25)',
-    borderColor: '#4C89FF',
-    shadowColor: '#4C89FF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  gridItemText: {
-    color: '#EAF6FF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  gridItemTextSelected: {
-    color: '#FFFFFF',
-  },
-  legendContainer: {
+  pillText: { fontSize: 12, fontWeight: '800', color: BRAND.text },
+
+  legend: {
+    paddingHorizontal: 18,
     flexDirection: 'row',
-    justifyContent: 'center',
+    gap: 18,
     alignItems: 'center',
-    marginTop: 10,
-    gap: 16,
+    marginTop: 6,
   },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  legendColor: { width: 16, height: 16, borderRadius: 4 },
-  legendText: { color: '#CFE7FF', fontSize: 12 },
-  footerText: {
+  legendDot: { height: 14, width: 22, borderRadius: 6 },
+  legendText: { fontSize: 12, color: BRAND.sub },
+
+  grid: {
     marginTop: 10,
-    color: '#AAC8EE',
-    fontSize: 13,
-    opacity: 0.9,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
+  slot: {
+    width: (width - 12 * 2 - 10 * 3) / 4,
+    margin: 5,
+    height: 68,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: BRAND.border,
+    backgroundColor: BRAND.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 6,
+  },
+  slotTaken: {
+    backgroundColor: '#EAECEF',
+  },
+  slotSelected: {
+    backgroundColor: '#EFEFF7',
+    borderColor: '#D6D1FF',
+  },
+  slotEV: {
+    shadowColor: '#2DBE7E',
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  slotLabel: { fontSize: 11, fontWeight: '700', color: BRAND.text },
+
+  cta: {
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: BRAND.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800' },
 });

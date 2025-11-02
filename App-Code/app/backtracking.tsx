@@ -1,538 +1,284 @@
 // app/backtracking.tsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
-  Alert,
+  SafeAreaView,
+  TouchableOpacity,
+  ScrollView,
   Image,
-  Animated,
-  Platform,
-  ActivityIndicator,
-  FlatList,
+  TextInput,
+  Dimensions,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store';
-import { getSocket } from './lib/socket';
+import { useRouter } from 'expo-router';
 
-// --- Config (uses envs you provided and falls back to them) ---
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.4:2105';
+const { width } = Dimensions.get('window');
 
-// A tiny base64 placeholder (transparent PNG)
-const BLANK_BASE64 =
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4////FwAJxwP5WkzjNwAAAABJRU5ErkJggg==';
-
-type ServerResult = {
-  matchConfidence?: number;
-  previewBase64?: string;
-  notes?: string;
-  lastKnownLocation?: string;
-  [k: string]: any;
+const BRAND = {
+  bg: '#F6F7FB',
+  card: '#FFFFFF',
+  text: '#0E1B26',
+  sub: '#6E7C87',
+  primary: '#5A67D8',
+  primarySoft: '#EEF0FF',
+  border: 'rgba(14,27,38,0.08)',
+  accent: '#FFD966',
 };
 
-type RequestItem = {
-  id: string; // local id
-  backendId?: string; // server request id to match socket updates
-  objectName: string;
-  objectColor: string;
-  createdAt: string; // ISO
-  status:
-    | 'found'
-    | 'in_progress'
-    | 'not_matched'
-    | 'pending'
-    | 'tracking'
-    | 'completed'
-    | 'rejected';
-  lastKnownLocation?: string;
-  imageBase64?: string; // base64 (no data: prefix)
-  serverResult?: ServerResult | null;
-};
+export default function LostFoundScreen() {
+  const router = useRouter();
+  const [search, setSearch] = useState('');
 
-export default function Backtracking() {
-  // --- Submit form state ---
-  const [objectName, setObjectName] = useState('');
-  const [objectColor, setObjectColor] = useState('');
-  const [userImage, setUserImage] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const pressScale = useMemo(() => new Animated.Value(1), []);
-
-  // --- History state (local; server has no user-history endpoint) ---
-  const [loadingHistory, setLoadingHistory] = useState(false);
-  const [requests, setRequests] = useState<RequestItem[]>([]);
-
-  // stable per-device user id (handy if you later move users into rooms)
-  const [userId, setUserId] = useState<string | null>(null);
-
-  // --- Seed + userId ---
-  useEffect(() => {
-    (async () => {
-      let uid = await SecureStore.getItemAsync('userId');
-      if (!uid) {
-        uid = `u_${Math.random().toString(36).slice(2, 10)}`;
-        await SecureStore.setItemAsync('userId', uid);
-      }
-      setUserId(uid);
-    })();
-
-    setLoadingHistory(true);
-    const t = setTimeout(() => setLoadingHistory(false), 300);
-    return () => clearTimeout(t);
-  }, []);
-
-  // --- Socket listeners: reflect backend updates into the list ---
-  useEffect(() => {
-    const s = getSocket();
-
-    const onResult = ({ req_id, result }: { req_id: string; result: ServerResult }) => {
-      setRequests((prev) =>
-        prev.map((r) =>
-          r.backendId === req_id
-            ? {
-                ...r,
-                status: 'completed',
-                lastKnownLocation: result?.lastKnownLocation || r.lastKnownLocation || '—',
-                serverResult: result,
-                imageBase64: result?.previewBase64 || r.imageBase64 || BLANK_BASE64,
-              }
-            : r
-        )
-      );
-      Alert.alert('Update', 'Your backtrack result is ready.');
-    };
-
-    const onRejected = ({ req_id }: { req_id: string }) => {
-      setRequests((prev) =>
-        prev.map((r) => (r.backendId === req_id ? { ...r, status: 'rejected' } : r))
-      );
-      Alert.alert('Update', 'Your request was rejected by admin.');
-    };
-
-    s.on('backtrack_result_ready', onResult);
-    s.on('backtrack_rejected', onRejected);
-
-    return () => {
-      s.off('backtrack_result_ready', onResult);
-      s.off('backtrack_rejected', onRejected);
-    };
-  }, []);
-
-  const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Please grant media library permissions to upload an image.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.9,
-    });
-    if (!result.canceled) {
-      const uri = result.assets?.[0]?.uri ?? null;
-      setUserImage(uri);
-    }
-  };
-
-  const handleRemoveImage = () => setUserImage(null);
-
-  // --- Submit to your existing /api/backtrack_request ---
-  const handleSubmit = async () => {
-    if (!objectName.trim() || !userImage) {
-      Alert.alert('Error', 'Please fill in object name and select a photo');
-      return;
-    }
-    try {
-      setSubmitting(true);
-
-      const form = new FormData();
-      form.append('object_name', objectName.trim());
-      // backend expects person_image
-      form.append('person_image', {
-        uri: userImage,
-        name: 'face.jpg',
-        type: 'image/jpeg',
-      } as any);
-      if (objectColor.trim()) form.append('object_color', objectColor.trim());
-      if (userId) form.append('user_id', userId); // optional: if you add user rooms later
-
-      const res = await fetch(`${API_BASE}/api/backtrack_request`, {
-        method: 'POST',
-        headers: { Accept: 'application/json' },
-        body: form,
-      });
-
-      const json = await res.json().catch(() => ({} as any));
-      if (!res.ok) {
-        throw new Error(json?.error || 'Submit failed');
-      }
-
-      const backend = json?.request; // { id, person_id, object_name, image_path, status, created_at }
-      const newItem: RequestItem = {
-        id: `local_${Math.random().toString(36).slice(2, 10)}`,
-        backendId: backend?.id,
-        objectName,
-        objectColor,
-        createdAt: backend?.created_at || new Date().toISOString(),
-        status: 'pending',
-        lastKnownLocation: '—',
-        imageBase64: BLANK_BASE64,
-        serverResult: null,
-      };
-
-      setRequests((prev) => [newItem, ...prev]);
-      Alert.alert('Submitted', 'Request sent for admin approval. You’ll get updates here.');
-      setObjectName('');
-      setObjectColor('');
-      setUserImage(null);
-    } catch (e: any) {
-      Alert.alert('Failed', e?.message || 'Could not submit');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const animatePressIn = () => {
-    Animated.spring(pressScale, { toValue: 0.97, useNativeDriver: true }).start();
-  };
-  const animatePressOut = () => {
-    Animated.spring(pressScale, { toValue: 1, useNativeDriver: true }).start();
-  };
-
-  const formatWhen = (iso: string) => {
-    try {
-      const d = new Date(iso);
-      return d.toLocaleString();
-    } catch {
-      return iso;
-    }
-  };
-
-  const statusPill = (status: RequestItem['status']) => {
-    const map = {
-      found: { label: 'Found', bg: '#10b981' },
-      in_progress: { label: 'In progress', bg: '#4C89FF' },
-      not_matched: { label: 'Not matched', bg: '#ef4444' },
-      pending: { label: 'Pending', bg: '#f59e0b' },
-      tracking: { label: 'Tracking…', bg: '#3b82f6' },
-      completed: { label: 'Completed', bg: '#10b981' },
-      rejected: { label: 'Rejected', bg: '#ef4444' },
-    } as const;
-    const s = map[status] || map.pending;
-    return (
-      <View style={[styles.pill, { backgroundColor: s.bg }]}>
-        <Text style={styles.pillText}>{s.label}</Text>
-      </View>
-    );
-  };
-
-  const handleNotMyObject = (id: string) => {
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'not_matched' } : r)));
-    Alert.alert('Noted', 'Thanks! We’ll continue searching for your object.');
-  };
-
-  const renderHistoryItem = ({ item }: { item: RequestItem }) => {
-    const dataUri = `data:image/png;base64,${item.imageBase64 || BLANK_BASE64}`;
-    return (
-      <BlurView intensity={70} tint="dark" style={styles.historyCard}>
-        <View style={styles.cardHeaderRow}>
-          <Text style={styles.cardTitle}>{item.objectName}</Text>
-          {statusPill(item.status)}
-        </View>
-
-        <Text style={styles.cardMeta}>
-          Color:{' '}
-          <Text style={{ fontWeight: '700', color: '#fff' }}>
-            {item.objectColor || '—'}
-          </Text>
-        </Text>
-        <Text style={styles.cardMeta}>
-          Last location:{' '}
-          <Text style={{ color: '#e8f2ff' }}>{item.lastKnownLocation || '—'}</Text>
-        </Text>
-        <Text style={styles.cardMeta}>
-          Requested:{' '}
-          <Text style={{ color: '#e8f2ff' }}>{formatWhen(item.createdAt)}</Text>
-        </Text>
-
-        <View style={styles.previewRow}>
-          <Image source={{ uri: dataUri }} style={styles.historyImage} />
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={styles.previewCaption}>Possible match preview</Text>
-            <Text style={styles.previewHint}>Binary image decoded from base64</Text>
-
-            <View style={styles.historyButtonsRow}>
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={[styles.actionSlim, { backgroundColor: '#4C89FF' }]}
-                onPress={() => {
-                  if (item.serverResult?.notes) {
-                    Alert.alert('Model Notes', item.serverResult.notes);
-                  } else {
-                    Alert.alert('Opening', 'Open full result / navigate to details screen');
-                  }
-                }}
-              >
-                <Ionicons name="eye-outline" size={16} color="#fff" />
-                <Text style={styles.actionSlimText}>View result</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={[styles.actionSlim, { backgroundColor: '#ef4444' }]}
-                onPress={() => handleNotMyObject(item.id)}
-              >
-                <Ionicons name="close-circle-outline" size={16} color="#fff" />
-                <Text style={styles.actionSlimText}>Not my object</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </BlurView>
-    );
-  };
+  const mockLostItems = [
+    {
+      id: 1,
+      title: 'Black Wallet',
+      place: 'Food Court',
+      time: '2h ago',
+      image: 'https://cdn-icons-png.flaticon.com/512/665/665939.png',
+    },
+    {
+      id: 2,
+      title: 'Red Backpack',
+      place: 'Cinema Area',
+      time: '5h ago',
+      image: 'https://cdn-icons-png.flaticon.com/512/809/809957.png',
+    },
+    {
+      id: 3,
+      title: 'Apple AirPods',
+      place: 'Level 2 Restroom',
+      time: '1 day ago',
+      image: 'https://cdn-icons-png.flaticon.com/512/1153/1153066.png',
+    },
+  ];
 
   return (
-    <LinearGradient colors={['#071A2A', '#0F3B66']} style={styles.bg}>
-      <SafeAreaView style={styles.safe}>
+    <View style={{ flex: 1, backgroundColor: BRAND.bg }}>
+      <SafeAreaView style={{ backgroundColor: BRAND.bg }}>
         {/* Header */}
-        <Text style={styles.header}>Report Lost Object</Text>
-        <Text style={styles.sub}>Add details and upload a photo to help locate it</Text>
-
-        {/* Form Card */}
-        <BlurView intensity={80} tint="dark" style={styles.formCard}>
-          <View style={styles.field}>
-            <Text style={styles.label}>Object Name</Text>
-            <TextInput
-              placeholder="e.g., Wallet, Phone, Keys"
-              placeholderTextColor="#9fb8ff"
-              value={objectName}
-              onChangeText={setObjectName}
-              style={styles.input}
-              returnKeyType="done"
-            />
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Object Color (optional)</Text>
-            <TextInput
-              placeholder="e.g., Black, Red, Blue"
-              placeholderTextColor="#9fb8ff"
-              value={objectColor}
-              onChangeText={setObjectColor}
-              style={styles.input}
-            />
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Upload Photo</Text>
-
-            <Animated.View style={{ transform: [{ scale: pressScale }] as any, width: '100%' }}>
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPressIn={() => Animated.spring(pressScale, { toValue: 0.97, useNativeDriver: true }).start()}
-                onPressOut={() => Animated.spring(pressScale, { toValue: 1, useNativeDriver: true }).start()}
-                onPress={pickImage}
-                style={styles.uploadButton}
-              >
-                <Ionicons name="image-outline" size={18} color="#fff" />
-                <Text style={styles.uploadButtonText}>{userImage ? 'Change Photo' : 'Select Photo'}</Text>
-              </TouchableOpacity>
-            </Animated.View>
-
-            {userImage ? (
-              <View style={styles.previewWrap}>
-                <Image source={{ uri: userImage }} style={styles.previewImage} />
-                <TouchableOpacity onPress={handleRemoveImage} style={styles.removeImageBtn}>
-                  <Ionicons name="trash-outline" size={18} color="#fff" />
-                </TouchableOpacity>
-              </View>
-            ) : null}
-          </View>
-
-          <TouchableOpacity
-            style={[styles.submitBtn, submitting && { opacity: 0.8 }]}
-            onPress={handleSubmit}
-            activeOpacity={0.85}
-            disabled={submitting}
-          >
-            <LinearGradient colors={['#4C89FF', '#1E62D0']} style={styles.submitGradient}>
-              <Ionicons name="send-outline" size={18} color="#fff" />
-              <Text style={styles.submitText}>{submitting ? 'Submitting...' : 'Submit Details'}</Text>
-            </LinearGradient>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
+            <Ionicons name="chevron-back" size={22} color={BRAND.text} />
           </TouchableOpacity>
-        </BlurView>
-
-        {/* History Section */}
-        <View style={styles.historyHeaderRow}>
-          <Text style={styles.historyHeader}>My Requests</Text>
-          {loadingHistory ? <ActivityIndicator size="small" color="#cfe7ff" /> : null}
+          <Text style={styles.headerTitle}>Lost & Found</Text>
+          <TouchableOpacity style={styles.iconBtn}>
+            <Ionicons name="help-circle-outline" size={22} color={BRAND.text} />
+          </TouchableOpacity>
         </View>
 
-        {requests.length === 0 && !loadingHistory ? (
-          <Text style={styles.emptyNote}>No requests yet. Submit the form above to create one.</Text>
-        ) : (
-          <FlatList
-            data={requests}
-            keyExtractor={(it) => it.id}
-            renderItem={renderHistoryItem}
-            contentContainerStyle={{ paddingBottom: 22 }}
-            showsVerticalScrollIndicator={false}
+        {/* Search */}
+        <View style={styles.searchRow}>
+          <Ionicons name="search-outline" size={18} color={BRAND.sub} />
+          <TextInput
+            placeholder="Search lost items..."
+            placeholderTextColor={BRAND.sub}
+            style={styles.searchInput}
+            value={search}
+            onChangeText={setSearch}
           />
-        )}
+        </View>
       </SafeAreaView>
-    </LinearGradient>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 28 }}
+      >
+        {/* Banner */}
+        <View style={styles.heroCard}>
+          <Ionicons name="alert-circle-outline" size={32} color={BRAND.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.heroTitle}>Lost something?</Text>
+            <Text style={styles.heroSub}>We’re here to help you find it</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.reportBtn}
+            activeOpacity={0.85}
+            onPress={() => router.push('/modal')}
+          >
+            <Ionicons name="add-circle" size={18} color="#fff" />
+            <Text style={styles.reportText}>Report</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Section header */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recently Reported</Text>
+          <TouchableOpacity>
+            <Text style={styles.seeAll}>See all</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Item cards */}
+        <View style={{ paddingHorizontal: 18 }}>
+          {mockLostItems.map((item) => (
+            <View key={item.id} style={styles.itemCard}>
+              <Image source={{ uri: item.image }} style={styles.itemImg} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.itemTitle}>{item.title}</Text>
+                <Text style={styles.itemSub}>{item.place}</Text>
+                <Text style={styles.itemTime}>{item.time}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.foundBtn}
+                onPress={() => router.push('/modal')}
+              >
+                <Text style={styles.foundText}>Claim</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+
+        {/* Divider */}
+        <View style={styles.divider} />
+
+        {/* CTA Card */}
+        <View style={styles.ctaCard}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.ctaTitle}>Found something valuable?</Text>
+            <Text style={styles.ctaSub}>Report it to help others</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.ctaBtn}
+            onPress={() => router.push('/modal')}
+          >
+            <Ionicons name="megaphone-outline" size={18} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
+/* ---------- Styles ---------- */
+
 const styles = StyleSheet.create({
-  bg: { flex: 1 },
-  safe: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 18 : 8,
-  },
   header: {
-    marginTop: 6,
-    color: '#EAF6FF',
-    fontSize: 28,
-    fontWeight: '800',
-  },
-  sub: {
-    marginTop: 6,
-    color: '#CFE7FF',
-    fontSize: 13,
-    marginBottom: 18,
-  },
-  formCard: {
-    width: '100%',
-    padding: 18,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 8,
-    marginBottom: 16,
-  },
-  field: { marginBottom: 14 },
-  label: { color: '#CFE7FF', marginBottom: 8, fontWeight: '600' },
-  input: {
-    backgroundColor: 'transparent',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-    color: '#fff',
-  },
-  uploadButton: {
+    height: 56,
+    paddingHorizontal: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    gap: 12,
   },
-  uploadButtonText: { color: '#EAF6FF', fontWeight: '700', marginLeft: 8 },
-  previewWrap: {
-    marginTop: 10,
-    position: 'relative',
+  iconBtn: {
+    height: 38,
+    width: 38,
     borderRadius: 12,
-    overflow: 'hidden',
-  },
-  previewImage: { width: '100%', height: 190, borderRadius: 12 },
-  removeImageBtn: {
-    position: 'absolute',
-    right: 8,
-    top: 8,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    padding: 8,
-    borderRadius: 8,
-  },
-  submitBtn: {
-    marginTop: 6,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  submitGradient: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    gap: 10,
+    backgroundColor: BRAND.card,
+    borderWidth: 1,
+    borderColor: BRAND.border,
   },
-  submitText: { color: '#fff', fontWeight: '800' },
-
-  // History
-  historyHeaderRow: {
-    marginTop: 8,
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    marginRight: 38,
+    fontSize: 18,
+    fontWeight: '800',
+    color: BRAND.text,
+  },
+  searchRow: {
+    height: 44,
+    marginHorizontal: 18,
     marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-  },
-  historyHeader: {
-    color: '#EAF6FF',
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  emptyNote: {
-    color: '#cfe7ff',
-    opacity: 0.8,
-    marginTop: 6,
-  },
-
-  historyCard: {
-    width: '100%',
-    padding: 14,
+    gap: 10,
+    paddingHorizontal: 12,
     borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: BRAND.card,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    marginBottom: 10,
+    borderColor: BRAND.border,
   },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-    alignItems: 'center',
-  },
-  cardTitle: { color: '#fff', fontSize: 16, fontWeight: '800' },
-  cardMeta: { color: '#cfe7ff', marginTop: 2, fontSize: 12 },
-  previewRow: { flexDirection: 'row', marginTop: 10, alignItems: 'center' },
-  historyImage: { width: 80, height: 80, borderRadius: 10, backgroundColor: '#244268' },
-  previewCaption: { color: '#eaf6ff', fontWeight: '700' },
-  previewHint: { color: '#cfe7ff', fontSize: 12, marginTop: 2 },
+  searchInput: { flex: 1, color: BRAND.text, fontSize: 14 },
 
-  historyButtonsRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
-  actionSlim: {
+  heroCard: {
+    marginHorizontal: 18,
+    marginTop: 12,
+    borderRadius: 16,
+    backgroundColor: BRAND.primarySoft,
+    borderWidth: 1,
+    borderColor: BRAND.border,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  heroTitle: { color: BRAND.text, fontWeight: '800', fontSize: 16 },
+  heroSub: { color: BRAND.sub, fontSize: 12 },
+  reportBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    backgroundColor: BRAND.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 10,
   },
-  actionSlimText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  reportText: { color: '#fff', fontWeight: '800', fontSize: 12 },
 
-  pill: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
+  sectionHeader: {
+    paddingHorizontal: 18,
+    marginTop: 16,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  pillText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  sectionTitle: { flex: 1, color: BRAND.text, fontSize: 16, fontWeight: '800' },
+  seeAll: { color: BRAND.sub, fontSize: 12, fontWeight: '700' },
+
+  itemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    marginBottom: 10,
+    backgroundColor: BRAND.card,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: BRAND.border,
+  },
+  itemImg: { width: 52, height: 52, borderRadius: 12 },
+  itemTitle: { fontSize: 15, fontWeight: '800', color: BRAND.text },
+  itemSub: { fontSize: 12, color: BRAND.sub },
+  itemTime: { fontSize: 11, color: BRAND.sub, marginTop: 2 },
+  foundBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: BRAND.primary,
+  },
+  foundText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+
+  divider: {
+    height: 1,
+    backgroundColor: BRAND.border,
+    marginVertical: 18,
+    marginHorizontal: 18,
+  },
+
+  ctaCard: {
+    marginHorizontal: 18,
+    backgroundColor: '#FFF7E6',
+    borderWidth: 1,
+    borderColor: '#FFE0A3',
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  ctaTitle: { fontSize: 15, fontWeight: '800', color: BRAND.text },
+  ctaSub: { fontSize: 12, color: BRAND.sub },
+  ctaBtn: {
+    height: 42,
+    width: 42,
+    borderRadius: 12,
+    backgroundColor: BRAND.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
