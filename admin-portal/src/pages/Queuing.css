@@ -1,0 +1,93 @@
+/* ===== Admin Queuing (scoped) ========================================= */
+.adminQueue-wrap {
+  color: #e5e7eb;
+  padding: 16px;
+}
+.adminQueue-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+.adminQueue-title { margin: 0; font-size: 22px; font-weight: 800; }
+.adminQueue-help { color: #9ca3af; margin-top: 4px; }
+
+.adminQueue-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.adminQueue-input {
+  height: 40px; border: 1px solid #2a3340; background: #0e1117; color: #e5e7eb;
+  border-radius: 10px; padding: 0 12px; outline: none; min-width: 220px; transition: box-shadow .15s;
+}
+.adminQueue-input:focus { box-shadow: 0 0 0 2px rgba(37, 99, 235, .35); }
+.adminQueue-textarea {
+  border: 1px solid #2a3340; background: #0e1117; color: #e5e7eb; border-radius: 10px; padding: 10px; outline: none;
+}
+.adminQueue-btn {
+  height: 40px; border-radius: 10px; border: 1px solid #2a3340; background: #121521; color: #fff; padding: 0 12px; cursor: pointer;
+}
+.adminQueue-btn:hover { background: #161a28; }
+.adminQueue-btn:disabled { opacity: .6; cursor: not-allowed; }
+.adminQueue-btn--primary { background: #2563eb; border-color: #2563eb; }
+.adminQueue-btn--primary:hover { background: #1d4ed8; }
+
+/* KPIs */
+.adminQueue-kpis {
+  display: grid; gap: 12px; margin-top: 14px;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+}
+@media (max-width: 900px) { .adminQueue-kpis { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+.adminQueue-card {
+  background: radial-gradient(1000px 250px at -10% -20%, #182133, #0f1422 40%, #0c101b 60%, #0b0c11 95%);
+  border: 1px solid #2a3340; border-radius: 16px; padding: 14px; box-shadow: 0 6px 18px rgba(0,0,0,.25);
+}
+.adminQueue-cardLabel { color: #9ca3af; font-size: 13px; }
+.adminQueue-cardValue { font-size: 22px; font-weight: 700; margin-top: 6px; }
+.adminQueue-textPrimary { color: #22c55e; }
+.adminQueue-textInfo { color: #3b82f6; }
+.adminQueue-textWarn { color: #f59e0b; }
+
+/* Panel + table */
+.adminQueue-panel { border: 1px solid #2a3340; border-radius: 16px; margin-top: 16px; overflow: hidden; background: #0b0f14cc; }
+.adminQueue-panelHead { padding: 12px 14px; border-bottom: 1px solid #2a3340; font-weight: 700; }
+.adminQueue-tableWrap { overflow-x: auto; }
+.adminQueue-table {
+  width: 100%; border-collapse: collapse; min-width: 840px;
+}
+.adminQueue-table thead th {
+  text-align: left; font-size: 12px; color: #9ca3af; padding: 10px 12px; background: #0f1420; border-bottom: 1px solid #2a3340; position: sticky; top: 0;
+}
+.adminQueue-table td {
+  padding: 12px; border-bottom: 1px solid #1f2533; vertical-align: top;
+}
+.adminQueue-table .num { text-align: right; }
+.adminQueue-table .actions { white-space: nowrap; text-align: right; }
+
+.adminQueue-name { font-weight: 700; }
+.adminQueue-sub { color: #9aa0aa; font-size: 12px; margin-top: 2px; }
+
+.adminQueue-badge {
+  font-size: 11px; padding: 4px 8px; border-radius: 999px; border: 1px solid transparent;
+}
+.adminQueue-badge.ok { background: rgba(16,185,129,.12); color: #a7f3d0; border-color: rgba(16,185,129,.35); }
+.adminQueue-badge.danger { background: rgba(244,63,94,.12); color: #fecdd3; border-color: rgba(244,63,94,.35); }
+
+.adminQueue-mini {
+  height: 32px; border-radius: 8px; border: 1px solid #2a3340; background: #10131c; color: #e5e7eb;
+  padding: 0 10px; cursor: pointer; margin-left: 6px;
+}
+.adminQueue-mini:hover { background: #141a29; }
+.adminQueue-mini.danger { background: #3a0b12; border-color: #3a0b12; }
+.adminQueue-mini.danger:hover { background: #4a0e17; }
+
+.adminQueue-table tr.is-disabled { opacity: .6; }
+
+/* Empty row */
+.adminQueue-table .empty { text-align: center; color: #9aa0aa; padding: 24px; }
+
+/* Modal */
+.adminQueue-modalBackdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px;
+}
+.adminQueue-modal {
+  width: min(560px, 92vw); border: 1px solid #2a3340; border-radius: 16px; background: #0f1420; box-shadow: 0 6px 18px rgba(0,0,0,.25); overflow: hidden;
+}
+.adminQueue-modalHead { padding: 12px 14px; border-bottom: 1px solid #2a3340; font-weight: 700; }
+.adminQueue-modalBody { padding: 14px; display: grid; gap: 10px; }
+.adminQueue-label { font-size: 12px; color: #9ca3af; }
+.adminQueue-modalFoot { padding: 12px 14px; border-top: 1px solid #2a3340; display: flex; gap: 10px; justify-content: flex-end; }
